@@ -1,0 +1,51 @@
+{
+  "name": "monster-battle-live",
+  "productName": "Monster Battle Live",
+  "version": "1.0.0",
+  "description": "TikTok Live AFK battle game: viewers pick RED or BLUE and send gifts to make their monster attack.",
+  "main": "desktop/main.js",
+  "scripts": {
+    "start": "electron .",
+    "bridge": "node bridge/bridge.js",
+    "dist:win": "electron-builder --win portable zip --x64",
+    "dist:mac": "electron-builder --mac dmg",
+    "dist:linux": "electron-builder --linux AppImage"
+  },
+  "dependencies": {
+    "tiktok-live-connector": "^2.5.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "live.monsterbattle.app",
+    "productName": "Monster Battle Live",
+    "files": [
+      "index.html",
+      "bridge/bridge.js",
+      "desktop/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "icon": "desktop/icon.png",
+      "signAndEditExecutable": false
+    },
+    "mac": {
+      "icon": "desktop/icon.png",
+      "category": "public.app-category.games"
+    },
+    "linux": {
+      "icon": "desktop/icon.png"
+    },
+    "portable": {
+      "artifactName": "MonsterBattleLive-portable.exe"
+    }
+  },
+  "repository": "https://github.com/HyperNoobzz/monster-battle-live",
+  "author": "HyperNoobzz"
+}

@@ -1,0 +1,962 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monster Battle Live</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --red:#ff3b4e; --red-dark:#a3122a; --blue:#2f8cff; --blue-dark:#0f4aa8;
+  --ink:#1b1e2b; --paper:#f8f8f0; --gold:#ffcf3a;
+  --hp-green:#3ee06b; --hp-yellow:#ffd23a; --hp-red:#ff4a3a;
+  --pixel:'Press Start 2P', monospace; --sans:'Nunito', system-ui, sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#0b0d16;overflow:hidden;font-family:var(--sans);color:var(--ink)}
+body.transparent{background:transparent}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+#stage{position:relative;width:540px;height:960px;transform-origin:center center;overflow:hidden;
+  background:linear-gradient(#1a1f3a,#10132a);box-shadow:0 0 60px #000a}
+/* ---------- header ---------- */
+#header{position:absolute;left:0;right:0;top:0;height:92px;padding:12px 16px;
+  background:linear-gradient(90deg,var(--red-dark),#2a1840 50%,var(--blue-dark));color:#fff}
+#title{font-family:var(--pixel);font-size:17px;text-align:center;letter-spacing:1px;text-shadow:3px 3px 0 #0008}
+#score{display:flex;justify-content:center;align-items:center;gap:14px;margin-top:12px;font-family:var(--pixel);font-size:14px}
+#score .r{color:#ffb3bb}#score .b{color:#b3d4ff}
+#score .num{font-size:22px;color:#fff}
+#roundTag{position:absolute;left:12px;top:56px;font-family:var(--pixel);font-size:9px;opacity:.85}
+#conn{position:absolute;right:12px;top:56px;font-family:var(--pixel);font-size:9px;display:flex;gap:6px;align-items:center}
+#conn i{width:9px;height:9px;border-radius:50%;background:#888;display:inline-block}
+#conn.live i{background:#ff2d55;box-shadow:0 0 8px #ff2d55;animation:pulse 1.2s infinite}
+#conn.sim i{background:#ffcf3a}
+@keyframes pulse{50%{opacity:.35}}
+/* ---------- join bar ---------- */
+#joinbar{position:absolute;top:92px;left:0;right:0;height:50px;display:flex}
+#joinbar div{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;color:#fff;font-weight:900;font-size:17px}
+#joinbar .jr{background:var(--red)}#joinbar .jb{background:var(--blue)}
+#joinbar kbd{font-family:var(--pixel);font-size:15px;background:#fff;color:var(--ink);border-radius:6px;padding:5px 8px;box-shadow:0 3px 0 #0005}
+/* ---------- field ---------- */
+#field{position:absolute;top:142px;left:0;width:540px;height:478px;overflow:hidden;
+  background:
+   radial-gradient(ellipse 70% 40% at 50% 0%, #bfe8ff 0%, transparent 70%),
+   linear-gradient(#8fd3ff 0%,#c9efff 46%,#9ee07a 46.2%,#6cc455 100%)}
+#field::before{content:"";position:absolute;left:-10%;right:-10%;top:46%;height:6px;background:#5aa646;opacity:.5}
+.platform{position:absolute;border-radius:50%;background:radial-gradient(ellipse at center,#cfe9a7 0%,#8fc46a 55%,#6aa84f 100%);box-shadow:inset 0 -6px 0 #0002}
+#platB{left:290px;top:208px;width:220px;height:54px}
+#platR{left:20px;top:410px;width:280px;height:66px}
+.mon{position:absolute;transition:filter .2s}
+.mon svg{width:100%;height:100%;overflow:visible}
+.mon .bob{width:100%;height:100%;animation:bob 2.4s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-6px) scaleY(1.02)}}
+#monB{left:310px;top:44px;width:180px;height:190px}
+#monR{left:44px;top:212px;width:230px;height:230px}
+#monR .bob{animation-delay:-1.2s}
+#monR svg{transform:scaleX(-1)}
+.mon.hit{animation:shake .4s}
+.mon.flash{filter:brightness(3) saturate(0)}
+.mon.faint{transition:transform .9s ease-in,opacity .9s ease-in;transform:translateY(80px);opacity:0}
+.mon.enter{animation:enter .7s cubic-bezier(.2,1.5,.5,1)}
+@keyframes enter{from{transform:scale(0) translateY(40px);opacity:0}}
+@keyframes shake{20%{transform:translateX(-10px)}40%{transform:translateX(10px)}60%{transform:translateX(-7px)}80%{transform:translateX(5px)}}
+.lungeR{animation:lungeR .35s}.lungeB{animation:lungeB .35s}
+@keyframes lungeR{50%{transform:translate(36px,-24px)}}
+@keyframes lungeB{50%{transform:translate(-36px,24px)}}
+/* HP boxes */
+.hpbox{position:absolute;width:250px;background:var(--paper);border:4px solid var(--ink);border-radius:12px 4px 12px 4px;padding:8px 10px 8px;box-shadow:5px 5px 0 #0004}
+#hpB{left:16px;top:22px}
+#hpR{left:274px;top:300px}
+.hpbox .team{position:absolute;top:-14px;left:10px;font-family:var(--pixel);font-size:9px;color:#fff;padding:4px 7px;border-radius:4px;border:2px solid var(--ink)}
+#hpR .team{background:var(--red)}#hpB .team{background:var(--blue)}
+.hpbox .row1{display:flex;justify-content:space-between;align-items:baseline;gap:6px}
+.hpbox .name{font-family:var(--pixel);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hpbox .lv{font-family:var(--pixel);font-size:10px;white-space:nowrap}
+.hpbox .row2{display:flex;align-items:center;gap:6px;margin-top:7px}
+.hpbox .hplabel{font-family:var(--pixel);font-size:8px;color:var(--gold);background:#4a3c1e;padding:2px 4px;border-radius:3px}
+.hpbar{flex:1;height:11px;background:#4b4f5e;border:2px solid var(--ink);border-radius:6px;overflow:hidden}
+.hpbar div{height:100%;width:100%;background:var(--hp-green);transition:width .5s ease-out,background .3s}
+.hpbox .row3{display:flex;justify-content:space-between;margin-top:6px;font-weight:900;font-size:13px}
+.type{font-family:var(--pixel);font-size:8px;color:#fff;padding:3px 6px;border-radius:4px;text-shadow:1px 1px 0 #0006}
+.hpbox .meta{font-size:12px;font-weight:800;color:#555;margin-top:4px;display:flex;justify-content:space-between}
+.bars{display:flex;gap:6px;margin-top:3px}
+.likebar,.powbar{flex:1;height:5px;background:#ddd;border-radius:3px;overflow:hidden}
+.likebar div,.powbar div{height:100%;width:0;background:#ff4f8b;transition:width .3s}
+.powbar div{background:#f0a400}
+.hpbox .sh{color:#1683c4}
+.mon.shielded::after{content:"";position:absolute;left:-4%;right:-4%;top:-2%;bottom:-6%;border-radius:50%;border:4px solid #7fd8ffb0;background:radial-gradient(circle,#7fd8ff00 55%,#7fd8ff40);animation:pulse 1.6s infinite;pointer-events:none}
+.dmg.shield{color:#7fd8ff}
+/* fx */
+#fx{position:absolute;inset:0;pointer-events:none}
+.orb{position:absolute;border-radius:50%;transform:translate(-50%,-50%)}
+.dmg{position:absolute;font-family:var(--pixel);font-size:22px;color:#fff;-webkit-text-stroke:2px var(--ink);paint-order:stroke;transform:translate(-50%,-50%);animation:rise 1.1s ease-out forwards;white-space:nowrap}
+.dmg.crit{font-size:30px;color:var(--gold)}
+.dmg.heal{color:#59ff8c}
+@keyframes rise{0%{transform:translate(-50%,-30%) scale(.5);opacity:0}15%{transform:translate(-50%,-50%) scale(1.25);opacity:1}100%{transform:translate(-50%,-140%) scale(1);opacity:0}}
+.burst{position:absolute;border-radius:50%;transform:translate(-50%,-50%);animation:burst .5s ease-out forwards}
+@keyframes burst{from{width:10px;height:10px;opacity:1}to{width:200px;height:200px;opacity:0}}
+#flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity .15s}
+#stage.quake{animation:quake .5s}
+@keyframes quake{20%{transform:var(--scale) translate(-8px,6px)}40%{transform:var(--scale) translate(8px,-6px)}60%{transform:var(--scale) translate(-6px,-4px)}80%{transform:var(--scale) translate(4px,4px)}}
+/* toast feed */
+#toasts{position:absolute;left:16px;top:172px;width:280px;display:flex;flex-direction:column;align-items:flex-start;gap:4px;pointer-events:none}
+.toast{font-weight:900;font-size:14px;color:#fff;padding:4px 12px;border-radius:20px;background:#0009;animation:toast 2.6s forwards;white-space:nowrap;max-width:280px;overflow:hidden;text-overflow:ellipsis}
+.toast.r{background:#c81e3ccc}.toast.b{background:#1a5fc8cc}
+@keyframes toast{0%{opacity:0;transform:translateY(8px)}10%,80%{opacity:1;transform:none}100%{opacity:0}}
+/* speed tag */
+#speed{position:absolute;right:10px;bottom:8px;font-family:var(--pixel);font-size:10px;color:#fff;background:#000a;padding:5px 8px;border-radius:6px;display:none}
+/* banner */
+#banner{position:absolute;left:0;right:0;top:150px;text-align:center;color:#fff;pointer-events:none;opacity:0;transform:scale(.6);transition:all .35s cubic-bezier(.2,1.5,.5,1)}
+#banner.show{opacity:1;transform:none}
+#banner .big{font-family:var(--pixel);font-size:30px;text-shadow:4px 4px 0 var(--ink),-2px -2px 0 var(--ink),2px -2px 0 var(--ink),-2px 2px 0 var(--ink)}
+#banner .sub{display:inline-block;margin-top:12px;font-weight:900;font-size:19px;background:#000b;padding:8px 16px;border-radius:10px}
+/* ---------- textbox ---------- */
+#textbox{position:absolute;top:620px;left:0;right:0;height:104px;background:#2c3350;padding:8px}
+#textbox .inner{height:100%;background:var(--paper);border:4px solid var(--ink);border-radius:10px;box-shadow:inset 0 0 0 4px #c9c2a6;padding:12px 16px;
+  font-weight:900;font-size:19px;line-height:1.3;display:flex;align-items:center;position:relative}
+#msg{transition:opacity .15s}
+#msg .hl{color:#c4162f}#msg .hb{color:#1452b8}#msg .gold{color:#b07800}
+#textbox .arrow{position:absolute;right:14px;bottom:8px;font-size:12px;animation:pulse 1s infinite}
+/* ---------- bottom panel ---------- */
+#panel{position:absolute;top:724px;left:0;right:0;bottom:0;background:#141831;color:#fff;padding:10px 12px}
+#gifts,#giftGuide{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+#giftGuide .c{font-size:12px}
+.dmg.star{color:#ffe14a;font-size:26px}
+.star-ring{position:absolute;border-radius:50%;transform:translate(-50%,-50%);border:6px solid #ffe14a;animation:burst .7s ease-out forwards}
+.gcard{background:#232a4d;border-radius:8px;padding:6px 4px;text-align:center;border-bottom:3px solid #0006}
+.gcard .c{font-family:var(--pixel);font-size:17px;color:var(--gold)}
+.gcard .n{font-weight:900;font-size:13px;margin-top:4px}
+.gcard .d{font-size:11px;opacity:.75;font-weight:800}
+.gcard.t3{background:linear-gradient(135deg,#5b2a8a,#a33a7a)}
+#boards{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.board{border-radius:8px;padding:6px 8px;min-height:84px}
+.board.r{background:#4a1525}.board.b{background:#132a55}
+.board h4{font-family:var(--pixel);font-size:8px;opacity:.85;margin-bottom:5px}
+.board ol{list-style:none;font-weight:800;font-size:13px}
+.board li{display:flex;justify-content:space-between;gap:6px;padding:1px 0}
+.board li span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.board li .medal{margin-right:3px}
+.board .empty{opacity:.5;font-size:12px}
+#hints{display:flex;justify-content:space-around;margin-top:7px;font-weight:900;font-size:12.5px;opacity:.9}
+/* ---------- simulator ---------- */
+#gear{position:fixed;right:12px;bottom:12px;z-index:20;width:44px;height:44px;border-radius:50%;border:0;background:#fff2;color:#fff;font-size:22px;cursor:pointer;backdrop-filter:blur(4px);opacity:.35}
+#gear:hover{background:#fff4;opacity:1}
+body.clean #gear{display:none}
+#sim{position:fixed;right:12px;bottom:66px;z-index:20;width:300px;max-height:calc(100vh - 90px);overflow:auto;background:#1c2140f2;color:#fff;border-radius:12px;padding:12px;font-size:13px;display:none;box-shadow:0 10px 40px #000a}
+#sim.open{display:block}
+#sim h3{font-family:var(--pixel);font-size:10px;margin:10px 0 6px;color:var(--gold)}
+#sim h3:first-child{margin-top:0}
+#sim .btns{display:flex;flex-wrap:wrap;gap:5px}
+#sim button{font:inherit;font-weight:800;border:0;border-radius:6px;padding:6px 8px;cursor:pointer;background:#3a4373;color:#fff}
+#sim button:hover{background:#4d58a0}
+#sim button.r{background:var(--red)}#sim button.b{background:var(--blue)}
+#sim button.on{background:#2ea84f}
+#sim label{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:4px 0}
+#sim input{font:inherit;width:110px;padding:4px 6px;border-radius:5px;border:0;background:#0d1028;color:#fff}
+#sim input[type=checkbox]{width:auto}
+[hidden]{display:none!important}
+#deskStatus{margin-top:6px;font-weight:800;font-size:12px}
+#sim .note{opacity:.7;font-size:11.5px;line-height:1.4;margin-top:6px}
+@media (max-width:640px){#sim{left:12px;right:12px;width:auto}}
+</style>
+</head>
+<body>
+<div id="wrap">
+<div id="stage">
+  <div id="header">
+    <div id="title">⚔ MONSTER BATTLE ⚔</div>
+    <div id="score"><span class="r">RED</span><span class="num" id="scoreR">0</span><span>–</span><span class="num" id="scoreB">0</span><span class="b">BLUE</span></div>
+    <div id="roundTag">ROUND 1</div>
+    <div id="conn" class="sim"><i></i><span id="connText">SIMULATOR</span></div>
+  </div>
+  <div id="joinbar">
+    <div class="jr">Comment <kbd>1</kbd> join RED</div>
+    <div class="jb">Comment <kbd>2</kbd> join BLUE</div>
+  </div>
+
+  <div id="field">
+    <div class="platform" id="platB"></div>
+    <div class="platform" id="platR"></div>
+    <div class="mon" id="monB"><div class="bob"></div></div>
+    <div class="mon" id="monR"><div class="bob"></div></div>
+
+    <div class="hpbox" id="hpB">
+      <div class="team">BLUE · <span class="cnt">0</span> players</div>
+      <div class="row1"><span class="name">—</span><span class="lv">Lv1</span></div>
+      <div class="row2"><span class="hplabel">HP</span><div class="hpbar"><div></div></div></div>
+      <div class="row3"><span class="type">—</span><span class="hpnum">0/0</span></div>
+      <div class="meta"><span class="lk">❤ 0/100</span><span class="sh"></span><span class="pw">⚡ 0/30</span></div>
+      <div class="bars"><div class="likebar"><div></div></div><div class="powbar"><div></div></div></div>
+    </div>
+    <div class="hpbox" id="hpR">
+      <div class="team">RED · <span class="cnt">0</span> players</div>
+      <div class="row1"><span class="name">—</span><span class="lv">Lv1</span></div>
+      <div class="row2"><span class="hplabel">HP</span><div class="hpbar"><div></div></div></div>
+      <div class="row3"><span class="type">—</span><span class="hpnum">0/0</span></div>
+      <div class="meta"><span class="lk">❤ 0/100</span><span class="sh"></span><span class="pw">⚡ 0/30</span></div>
+      <div class="bars"><div class="likebar"><div></div></div><div class="powbar"><div></div></div></div>
+    </div>
+
+    <div id="fx"></div>
+    <div id="toasts"></div>
+    <div id="banner"><div class="big" id="bannerBig"></div><div class="sub" id="bannerSub"></div></div>
+    <div id="speed">⏩ x1</div>
+    <div id="flash"></div>
+  </div>
+
+  <div id="textbox"><div class="inner"><div id="msg">Loading…</div><span class="arrow">▼</span></div></div>
+
+  <div id="panel">
+    <div id="gifts">
+      <div class="gcard"><div class="c">A</div><div class="n">Attack</div><div class="d">hit the enemy</div></div>
+      <div class="gcard"><div class="c">D</div><div class="n">Defend</div><div class="d">add a shield</div></div>
+      <div class="gcard"><div class="c">H</div><div class="n">Heal</div><div class="d">restore HP</div></div>
+      <div class="gcard t3"><div class="c">⚡</div><div class="n">POWER</div><div class="d" id="powHint">every 30 commands</div></div>
+    </div>
+    <div id="giftGuide" hidden>
+      <div class="gcard"><div class="c">1+ 🪙</div><div class="n">Gift</div><div class="d">quick hit</div></div>
+      <div class="gcard"><div class="c">5+ 🪙</div><div class="n">Gift</div><div class="d">special move</div></div>
+      <div class="gcard"><div class="c">30+ 🪙</div><div class="n">Gift</div><div class="d">power move</div></div>
+      <div class="gcard t3"><div class="c">100+ 🪙</div><div class="n">Gift</div><div class="d">ULTIMATE</div></div>
+    </div>
+    <div id="boards">
+      <div class="board r"><h4>RED TOP DAMAGE</h4><ol id="topR"></ol></div>
+      <div class="board b"><h4>BLUE TOP DAMAGE</h4><ol id="topB"></ol></div>
+    </div>
+    <div id="hints"><span>💬 Comment A · D · H</span><span id="likeHint">❤ 100 likes = free hit</span><span>🔁 Share = heal</span></div>
+  </div>
+</div>
+</div>
+
+<button id="gear" title="Simulator & settings (S)">⚙</button>
+<div id="sim">
+  <h3>VIEWERS JOIN</h3>
+  <div class="btns">
+    <button class="r" data-sim="join1">+1 RED</button>
+    <button class="b" data-sim="join2">+1 BLUE</button>
+    <button data-sim="join10">+10 random</button>
+  </div>
+  <h3>COMMENT COMMANDS (random viewer)</h3>
+  <div class="btns">
+    <button data-cmd="a">A attack</button>
+    <button data-cmd="d">D defend</button>
+    <button data-cmd="h">H heal</button>
+    <button data-sim="storm">Chat storm ×40</button>
+  </div>
+  <h3>SUPPORT ATTACKS (not shown on screen)</h3>
+  <div class="btns">
+    <button data-gift="1">1 🪙</button>
+    <button data-gift="5">5 🪙</button>
+    <button data-gift="30">30 🪙</button>
+    <button data-gift="100">100 🪙</button>
+    <button data-gift="500">500 🪙</button>
+    <button data-sim="streak">Rose ×15</button>
+  </div>
+  <h3>ENGAGEMENT</h3>
+  <div class="btns">
+    <button data-sim="likes">+100 likes</button>
+    <button data-sim="share">Share</button>
+    <button data-sim="follow">Follow</button>
+    <button data-sim="burst">Burst ×30</button>
+    <button id="autoBtn" data-sim="auto">Auto-play: off</button>
+  </div>
+  <div id="deskSec" hidden>
+    <h3>TIKTOK LIVE</h3>
+    <label for="deskUser">Your username <input id="deskUser" placeholder="@yourname"></label>
+    <div class="btns"><button id="deskGo" class="on">Go live</button><button id="deskStop">Stop</button></div>
+    <div id="deskStatus">Not connected. Start your LIVE on TikTok, then press Go live.</div>
+  </div>
+  <div id="bridgeSec">
+  <h3>TIKTOK BRIDGE</h3>
+  <label>WebSocket <input id="wsUrl" value="ws://localhost:8080"></label>
+  <div class="btns"><button id="wsBtn">Connect</button></div>
+  </div>
+  <h3>SETTINGS</h3>
+  <label>Base HP <input id="setHp" type="number" min="50" step="50"></label>
+  <label>Support damage per coin <input id="setDpc" type="number" min="1" step="1"></label>
+  <label>Likes per free attack <input id="setLikes" type="number" min="10" step="10"></label>
+  <label>Commands per POWER move <input id="setPow" type="number" min="5" step="5"></label>
+  <label>Comment cooldown (sec) <input id="setCd" type="number" min="0" step="1"></label>
+  <label>Show gift guide on screen <input id="setGuide" type="checkbox"></label>
+  <label>Sound effects <input id="setSound" type="checkbox"></label>
+  <div class="btns" style="margin-top:6px"><button id="resetBtn">Reset scores</button><button id="skipBtn">Skip round</button></div>
+  <div class="note">Press <b>S</b> to toggle this panel. Add <b>?clean</b> to the URL to hide the ⚙ button for OBS. Add <b>?ws=ws://host:port</b> to pick a bridge.</div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const params = new URLSearchParams(location.search);
+if (params.has('clean')) document.body.classList.add('clean');
+if (params.has('transparent')) document.body.classList.add('transparent');
+
+/* ================= storage (best-effort) ================= */
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem('mb_'+k); return v == null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem('mb_'+k, JSON.stringify(v)); }catch(e){} }
+};
+
+/* ================= settings ================= */
+const settings = Object.assign({ baseHp: 1000, dmgPerCoin: 8, likesPerAttack: 100, powerGoal: 30, cmdCooldown: 3, showGiftGuide: false, sound: true }, store.get('settings', {}));
+function saveSettings(){ store.set('settings', settings); }
+
+/* ================= scaling ================= */
+const stage = $('#stage');
+function fit(){
+  const s = Math.min(innerWidth / 540, innerHeight / 960);
+  stage.style.setProperty('--scale', `scale(${s})`);
+  stage.style.transform = `scale(${s})`;
+}
+addEventListener('resize', fit); fit();
+
+/* ================= rng & monsters ================= */
+function mulberry32(a){ return function(){ a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+const TYPES = {
+  fire:     { label:'FIRE',     color:'#ff6a2b', body:['#ff7b3a','#ff5a4a','#ff9a2b'], fx:['#fff3a0','#ff7a1a','#d81f00'],
+              moves:['Ember','Flame Fang','Inferno','Supernova'], syl:['Pyr','Blaz','Cind','Ign','Scor'] },
+  water:    { label:'WATER',    color:'#2f8cff', body:['#3aa0ff','#2fc6e0','#4f7dff'], fx:['#e0fbff','#4fc3ff','#1a5cff'],
+              moves:['Bubble','Aqua Jet','Tidal Wave','Abyss Surge'], syl:['Aqu','Tid','Mari','Hydr','Splas'] },
+  grass:    { label:'GRASS',    color:'#3fbf4f', body:['#5ad05a','#8fd03a','#3fbf8a'], fx:['#f0ffd0','#7fe04a','#1f8f2a'],
+              moves:['Leaf Cut','Vine Lash','Solar Bloom','World Tree'], syl:['Fol','Bram','Thor','Sylv','Moss'] },
+  electric: { label:'ELECTRIC', color:'#f2c400', body:['#ffd83a','#ffe75a','#ffc21a'], fx:['#ffffff','#fff04a','#ffb000'],
+              moves:['Spark','Volt Claw','Thunderstorm','Gigavolt'], syl:['Volt','Zap','Static','Amp','Jolt'] },
+  rock:     { label:'ROCK',     color:'#a0794a', body:['#b08a5a','#9a8f7a','#c09a6a'], fx:['#fff0d0','#c8a070','#6a4a2a'],
+              moves:['Pebble Toss','Rock Slam','Landslide','Meteor Fall'], syl:['Grav','Bould','Crag','Terr','Ston'] },
+  shadow:   { label:'SHADOW',   color:'#7a4ad8', body:['#7a5ad8','#5a4a9a','#9a5ad0'], fx:['#f0d0ff','#a05aff','#3a0a7a'],
+              moves:['Shade','Night Fang','Void Pulse','Eclipse'], syl:['Umbr','Nyx','Gloom','Vex','Noct'] },
+};
+const TYPE_KEYS = Object.keys(TYPES);
+// attacker type -> type it is strong against
+const STRONG = { fire:'grass', grass:'water', water:'fire', electric:'water', rock:'electric', shadow:'rock', };
+const STRONG2 = { fire:'shadow', grass:'rock', water:'rock', electric:'shadow', rock:'fire', shadow:'grass' };
+function typeMult(att, def){ return (STRONG[att] === def || STRONG2[att] === def) ? 1.5 : 1; }
+
+function shade(hex, amt){
+  let n = parseInt(hex.slice(1), 16), r = (n >> 16) + amt, g = (n >> 8 & 255) + amt, b = (n & 255) + amt;
+  const c = v => Math.max(0, Math.min(255, v));
+  return '#' + ((1 << 24) + (c(r) << 16) + (c(g) << 8) + c(b)).toString(16).slice(1);
+}
+function blobPath(rng, cx, cy, rx, ry, n, wob){
+  const pts = [];
+  for (let i = 0; i < n; i++){
+    const a = (i / n) * Math.PI * 2 - Math.PI / 2;
+    const k = 1 + (rng() - .5) * wob;
+    pts.push([cx + Math.cos(a) * rx * k, cy + Math.sin(a) * ry * k * (Math.sin(a) > 0 ? 1.08 : 1)]);
+  }
+  let d = `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
+  for (let i = 0; i < n; i++){
+    const p0 = pts[(i - 1 + n) % n], p1 = pts[i], p2 = pts[(i + 1) % n], p3 = pts[(i + 2) % n];
+    const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+    const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+    d += ` C${c1[0].toFixed(1)},${c1[1].toFixed(1)} ${c2[0].toFixed(1)},${c2[1].toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
+  }
+  return d + 'Z';
+}
+function pick(rng, arr){ return arr[Math.floor(rng() * arr.length)]; }
+
+function makeMonster(seed, type, level){
+  const rng = mulberry32(seed);
+  const T = TYPES[type];
+  const body = pick(rng, T.body), dark = shade(body, -60), light = shade(body, 70), outline = '#1b1e2b';
+  const rx = 52 + rng() * 16, ry = 44 + rng() * 18, cx = 100, cy = 118;
+  const top = cy - ry;
+  const sw = 4;
+  let back = '', front = '';
+  // tail
+  if (rng() < .75){
+    const side = 1, tx = cx + rx * .8 * side, ty = cy + ry * .3;
+    const tip = type === 'fire' ? `<circle cx="${tx+44}" cy="${ty-52}" r="13" fill="#ffd24a" stroke="${outline}" stroke-width="3"/>`
+              : type === 'electric' ? `<path d="M${tx+30},${ty-50} l14,-6 l-6,16 l14,-4 l-22,26 l6,-18 l-12,2z" fill="#fff35a" stroke="${outline}" stroke-width="3"/>`
+              : type === 'grass' ? `<ellipse cx="${tx+42}" cy="${ty-50}" rx="14" ry="8" transform="rotate(-40 ${tx+42} ${ty-50})" fill="#7fe04a" stroke="${outline}" stroke-width="3"/>` : '';
+    back += `<path d="M${tx-10},${ty} Q${tx+40},${ty+6} ${tx+40},${ty-46}" fill="none" stroke="${outline}" stroke-width="${16+sw}" stroke-linecap="round"/>
+             <path d="M${tx-10},${ty} Q${tx+40},${ty+6} ${tx+40},${ty-46}" fill="none" stroke="${dark}" stroke-width="14" stroke-linecap="round"/>${tip}`;
+  }
+  // head features
+  const feat = Math.floor(rng() * 5);
+  const hx = rx * (.45 + rng() * .2);
+  for (const s of [-1, 1]){
+    const x = cx + s * hx, y = top + 10;
+    if (feat === 0) back += `<path d="M${x-12*s},${y+6} L${x+6*s},${y-34-rng()*10} L${x+16*s},${y+10}Z" fill="${dark}" stroke="${outline}" stroke-width="${sw}" stroke-linejoin="round"/>`;
+    else if (feat === 1) back += `<ellipse cx="${x}" cy="${y-8}" rx="16" ry="20" fill="${body}" stroke="${outline}" stroke-width="${sw}"/><ellipse cx="${x}" cy="${y-8}" rx="8" ry="11" fill="${light}"/>`;
+    else if (feat === 2) back += `<path d="M${x},${y+6} Q${x+s*6},${y-24} ${x+s*16},${y-36}" fill="none" stroke="${outline}" stroke-width="4"/><circle cx="${x+s*16}" cy="${y-38}" r="8" fill="${T.fx[1]}" stroke="${outline}" stroke-width="3"/>`;
+    else if (feat === 3) back += `<path d="M${x-14},${y+10} Q${x+s*4},${y-40} ${x+s*30},${y-30} Q${x+s*10},${y-12} ${x+14*s},${y+12}Z" fill="${dark}" stroke="${outline}" stroke-width="${sw}" stroke-linejoin="round"/>`;
+  }
+  if (feat === 4){ // crest of spikes
+    for (let i = -2; i <= 2; i++){
+      const x = cx + i * 15, y = top + 6 + Math.abs(i) * 6, h = 22 - Math.abs(i) * 4;
+      back += `<path d="M${x-9},${y+6} L${x},${y-h} L${x+9},${y+6}Z" fill="${T.fx[1]}" stroke="${outline}" stroke-width="3" stroke-linejoin="round"/>`;
+    }
+  }
+  // feet
+  for (const s of [-1, 1]) back += `<ellipse cx="${cx+s*rx*.5}" cy="${cy+ry*.95}" rx="18" ry="11" fill="${dark}" stroke="${outline}" stroke-width="${sw}"/>`;
+  // body
+  front += `<path d="${blobPath(rng, cx, cy, rx, ry, 8, .22)}" fill="${body}" stroke="${outline}" stroke-width="${sw}" stroke-linejoin="round"/>`;
+  // belly
+  front += `<ellipse cx="${cx}" cy="${cy+ry*.35}" rx="${rx*.55}" ry="${ry*.48}" fill="${light}" opacity=".85"/>`;
+  // pattern
+  const pat = Math.floor(rng() * 3);
+  if (pat === 0) for (let i = 0; i < 4; i++) front += `<circle cx="${cx + (rng()-.5)*rx*1.5}" cy="${cy - ry*.2 + (rng()-.5)*ry*.6}" r="${3+rng()*5}" fill="${dark}" opacity=".55"/>`;
+  else if (pat === 1) for (const s of [-1,1]) for (let i = 0; i < 2; i++) front += `<path d="M${cx+s*(rx-4)},${cy-8+i*16} q${-s*14},4 ${-s*20},12" fill="none" stroke="${dark}" stroke-width="5" stroke-linecap="round" opacity=".7"/>`;
+  // arms
+  for (const s of [-1, 1]) front += `<ellipse cx="${cx+s*rx*.88}" cy="${cy+ry*.3}" rx="11" ry="16" transform="rotate(${s*-25} ${cx+s*rx*.88} ${cy+ry*.3})" fill="${body}" stroke="${outline}" stroke-width="${sw}"/>`;
+  // eyes
+  const eyes = rng() < .12 ? 1 : rng() < .1 ? 3 : 2;
+  const ey = cy - ry * .32, er = eyes === 1 ? 17 : 11 + rng() * 4, angry = rng() < .5;
+  const ex = eyes === 1 ? [0] : eyes === 2 ? [-1, 1].map(s => s * (16 + rng() * 8)) : [-24, 0, 24];
+  for (const dx of ex){
+    const x = cx + dx, y = ey + (eyes === 3 && dx === 0 ? -10 : 0);
+    front += `<ellipse cx="${x}" cy="${y}" rx="${er}" ry="${er*1.1}" fill="#fff" stroke="${outline}" stroke-width="3"/>
+              <circle cx="${x+2}" cy="${y+2}" r="${er*.55}" fill="${outline}"/><circle cx="${x+er*.25}" cy="${y-er*.2}" r="${er*.22}" fill="#fff"/>`;
+    if (angry && eyes === 2){ const s = Math.sign(dx); front += `<path d="M${x-er*s},${y-er-6} L${x+er*.8*s},${y-er+2}" stroke="${outline}" stroke-width="5" stroke-linecap="round"/>`; }
+  }
+  // mouth
+  const my = cy + ry * .1, mw = 14 + rng() * 10;
+  if (rng() < .5) front += `<path d="M${cx-mw},${my} Q${cx},${my+18} ${cx+mw},${my}" fill="#7a1a2a" stroke="${outline}" stroke-width="3"/>
+                            <path d="M${cx-mw*.6},${my+2} l4,8 l4,-7 M${cx+mw*.6},${my+2} l-4,8 l-4,-7" fill="#fff" stroke="${outline}" stroke-width="1.5"/>`;
+  else front += `<path d="M${cx-mw},${my} Q${cx-mw/2},${my+10} ${cx},${my+2} Q${cx+mw/2},${my+10} ${cx+mw},${my}" fill="none" stroke="${outline}" stroke-width="4" stroke-linecap="round"/>
+                 <path d="M${cx-mw*.45},${my+3} l3,7 l3,-6" fill="#fff" stroke="${outline}" stroke-width="1.5"/>`;
+  // cheeks
+  front += `<ellipse cx="${cx-rx*.62}" cy="${my-2}" rx="7" ry="4" fill="#ff7a9a" opacity=".6"/><ellipse cx="${cx+rx*.62}" cy="${my-2}" rx="7" ry="4" fill="#ff7a9a" opacity=".6"/>`;
+  // aura at higher levels
+  const aura = level >= 4 ? `<ellipse cx="${cx}" cy="${cy}" rx="${rx+26}" ry="${ry+30}" fill="${T.fx[1]}" opacity=".22"><animate attributeName="opacity" values=".1;.35;.1" dur="1.6s" repeatCount="indefinite"/></ellipse>` : '';
+  const svg = `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">${aura}<ellipse cx="100" cy="${cy+ry+10}" rx="${rx}" ry="10" fill="#0003"/>${back}${front}</svg>`;
+  const name = (pick(rng, T.syl) + pick(rng, ['o','a','i','u','e','']) + pick(rng, ['don','rex','mite','fang','claw','zor','lume','gon','byte','saur','mon'])).toUpperCase();
+  return { svg, name };
+}
+
+/* ================= game state ================= */
+const teams = {
+  R: { key:'R', label:'RED', score:0, members:new Set(), likes:0, power:0, shield:0, mon:null, dmg:new Map(), el:{ mon:$('#monR'), hp:$('#hpR'), top:$('#topR') } },
+  B: { key:'B', label:'BLUE', score:0, members:new Set(), likes:0, power:0, shield:0, mon:null, dmg:new Map(), el:{ mon:$('#monB'), hp:$('#hpB'), top:$('#topB') } },
+};
+const saved = store.get('scores', { R:0, B:0, round:1 });
+teams.R.score = saved.R; teams.B.score = saved.B;
+let round = saved.round || 1;
+const players = new Map(); // user -> { team, nickname }
+const lastShare = new Map();
+function other(k){ return k === 'R' ? 'B' : 'R'; }
+function saveScores(){ store.set('scores', { R:teams.R.score, B:teams.B.score, round }); }
+
+function newMonster(team){
+  const type = pick(Math.random, TYPE_KEYS);
+  const level = round;
+  const seed = (Math.random() * 2**31) | 0;
+  const { svg, name } = makeMonster(seed, type, level);
+  const maxHp = Math.round(settings.baseHp * Math.pow(1.3, level - 1));
+  team.mon = { type, level, name, svg, maxHp, hp: maxHp };
+  const el = team.el.mon;
+  el.classList.remove('faint');
+  el.querySelector('.bob').innerHTML = svg;
+  el.classList.remove('enter'); void el.offsetWidth; el.classList.add('enter');
+  renderHp(team);
+}
+function renderHp(team){
+  const m = team.mon, box = team.el.hp, T = TYPES[m.type];
+  box.querySelector('.name').textContent = m.name;
+  box.querySelector('.lv').textContent = 'Lv' + m.level;
+  const t = box.querySelector('.type'); t.textContent = T.label; t.style.background = T.color;
+  const pct = Math.max(0, m.hp / m.maxHp);
+  const bar = box.querySelector('.hpbar div');
+  bar.style.width = (pct * 100) + '%';
+  bar.style.background = pct > .5 ? 'var(--hp-green)' : pct > .2 ? 'var(--hp-yellow)' : 'var(--hp-red)';
+  box.querySelector('.hpnum').textContent = `${Math.max(0, Math.ceil(m.hp))}/${m.maxHp}`;
+  box.querySelector('.sh').textContent = team.shield > 0 ? `🛡 ${Math.ceil(team.shield)}` : '';
+  team.el.mon.classList.toggle('shielded', team.shield > 0);
+}
+function renderTeamMeta(team){
+  team.el.hp.querySelector('.cnt').textContent = team.members.size;
+  team.el.hp.querySelector('.lk').textContent = `❤ ${team.likes}/${settings.likesPerAttack}`;
+  team.el.hp.querySelector('.pw').textContent = `⚡ ${team.power}/${settings.powerGoal}`;
+  team.el.hp.querySelector('.likebar div').style.width = Math.min(100, team.likes / settings.likesPerAttack * 100) + '%';
+  team.el.hp.querySelector('.powbar div').style.width = Math.min(100, team.power / settings.powerGoal * 100) + '%';
+  $('#powHint').textContent = `every ${settings.powerGoal} commands`;
+  $('#likeHint').textContent = `❤ ${settings.likesPerAttack} likes = free hit`;
+}
+function renderBoards(){
+  for (const team of Object.values(teams)){
+    const list = [...team.dmg.entries()].sort((a, b) => b[1].dmg - a[1].dmg).slice(0, 3);
+    const medals = ['🥇','🥈','🥉'];
+    team.el.top.innerHTML = list.length
+      ? list.map(([, v], i) => `<li><span><span class="medal">${medals[i]}</span>${esc(v.nickname)}</span><span>${fmt(v.dmg)}</span></li>`).join('')
+      : `<li class="empty">No damage yet — comment A!</li>`;
+  }
+}
+function renderScore(){
+  $('#scoreR').textContent = teams.R.score; $('#scoreB').textContent = teams.B.score;
+  $('#roundTag').textContent = 'ROUND ' + round;
+}
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = n => n >= 10000 ? (n / 1000).toFixed(1) + 'k' : String(Math.round(n));
+const short = s => { s = String(s || 'Viewer'); return s.length > 14 ? s.slice(0, 13) + '…' : s; };
+
+/* ================= text box ================= */
+const msgEl = $('#msg');
+function say(html){ msgEl.style.opacity = 0; setTimeout(() => { msgEl.innerHTML = html; msgEl.style.opacity = 1; }, 60); }
+function teamSpan(k, text){ return `<span class="${k === 'R' ? 'hl' : 'hb'}">${esc(text)}</span>`; }
+
+/* ================= toasts ================= */
+function toast(text, cls){
+  const box = $('#toasts');
+  const t = document.createElement('div'); t.className = 'toast ' + (cls || ''); t.textContent = text;
+  box.appendChild(t);
+  while (box.children.length > 3) box.firstChild.remove();
+  setTimeout(() => t.remove(), 2700);
+}
+
+/* ================= sound ================= */
+let actx = null;
+function beep(freq, dur, type = 'square', vol = .05, slide = 0){
+  if (!settings.sound) return;
+  try{
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === 'suspended') actx.resume();
+    const o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime;
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, freq + slide), t + dur);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    o.connect(g).connect(actx.destination); o.start(t); o.stop(t + dur);
+  }catch(e){}
+}
+const sfx = {
+  hit(tier){ beep(220 - tier * 30, .15 + tier * .08, 'square', .05, -120); if (tier >= 2) beep(90, .4, 'sawtooth', .05, -50); },
+  crit(){ beep(880, .08); setTimeout(() => beep(1320, .12), 70); },
+  heal(){ beep(520, .1, 'sine', .06, 300); setTimeout(() => beep(780, .15, 'sine', .06, 300), 90); },
+  join(){ beep(660, .06, 'triangle', .04); },
+  faint(){ beep(400, .8, 'triangle', .07, -340); },
+  win(){ [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => beep(f, .18, 'square', .05), i * 120)); },
+};
+
+/* ================= players ================= */
+function smallerTeam(){
+  const r = teams.R.members.size, b = teams.B.members.size;
+  return r === b ? (Math.random() < .5 ? 'R' : 'B') : r < b ? 'R' : 'B';
+}
+function joinTeam(user, nickname, k, auto){
+  const p = players.get(user);
+  if (p && p.team === k){ p.nickname = nickname; return k; }
+  if (p) teams[p.team].members.delete(user);
+  players.set(user, { team:k, nickname });
+  teams[k].members.add(user);
+  renderTeamMeta(teams.R); renderTeamMeta(teams.B);
+  toast(`${short(nickname)} ${p ? 'switched to' : auto ? 'was placed on' : 'joined'} ${teams[k].label}!`, k === 'R' ? 'r' : 'b');
+  sfx.join();
+  return k;
+}
+function teamOf(user, nickname){
+  const p = players.get(user);
+  if (p){ if (nickname) p.nickname = nickname; return p.team; }
+  return joinTeam(user, nickname, smallerTeam(), true);
+}
+
+/* ================= event queue ================= */
+const queue = [];
+let busy = false, busySince = 0;
+function speed(){ return Math.min(5, 1 + queue.length / 4); }
+const wait = ms => new Promise(r => setTimeout(r, ms / speed()));
+function enqueue(item){ queue.push(item); markActive(); pump(); }
+async function pump(){
+  if (busy) return;
+  busy = true; busySince = Date.now();
+  try{
+    while (queue.length){
+      const item = queue.shift();
+      busySince = Date.now();
+      updateSpeedTag();
+      try{
+        if (item.kind === 'attack') await doAttack(item);
+        else if (item.kind === 'heal') await doHeal(item);
+      }catch(e){ console.error(e); }
+    }
+  } finally { busy = false; updateSpeedTag(); }
+}
+// Watchdog: if a step hangs (e.g. throttled tab), unstick the queue.
+setInterval(() => { if (busy && Date.now() - busySince > 15000){ console.warn('queue watchdog reset'); busy = false; pump(); } }, 3000);
+function updateSpeedTag(){
+  const s = speed(), el = $('#speed');
+  el.style.display = queue.length > 2 ? 'block' : 'none';
+  el.textContent = `⏩ x${s.toFixed(1)} · ${queue.length} queued`;
+}
+
+/* ================= fx helpers ================= */
+const field = $('#field'), fx = $('#fx');
+function center(el){ const f = field.getBoundingClientRect(), r = el.getBoundingClientRect(), s = f.width / 540;
+  return { x:(r.left + r.width / 2 - f.left) / s, y:(r.top + r.height / 2 - f.top) / s }; }
+function addFx(cls, x, y, style, html){
+  const d = document.createElement('div'); d.className = cls; d.style.left = x + 'px'; d.style.top = y + 'px';
+  if (style) Object.assign(d.style, style); if (html != null) d.innerHTML = html;
+  fx.appendChild(d); return d;
+}
+async function projectile(from, to, colors, tier){
+  const n = tier === 0 ? 1 : tier === 1 ? 3 : tier === 2 ? 6 : 10;
+  const size = 20 + tier * 10, dur = 380 / speed();
+  for (let i = 0; i < n; i++){
+    const o = addFx('orb', from.x, from.y, {
+      width:size + 'px', height:size + 'px',
+      background:`radial-gradient(circle, ${colors[0]} 0%, ${colors[1]} 45%, ${colors[2]}00 75%)`,
+      boxShadow:`0 0 ${12 + tier * 8}px ${colors[1]}`, transition:`left ${dur}ms ease-in, top ${dur}ms ease-in, opacity ${dur}ms`
+    });
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      o.style.left = (to.x + (Math.random() - .5) * 50 * (tier > 0)) + 'px';
+      o.style.top = (to.y + (Math.random() - .5) * 50 * (tier > 0)) + 'px';
+    }));
+    setTimeout(() => o.remove(), dur + 80);
+    if (n > 1) await new Promise(r => setTimeout(r, 50 / speed()));
+  }
+  await new Promise(r => setTimeout(r, dur));
+}
+function burstAt(p, color){ const b = addFx('burst', p.x, p.y, { background:`radial-gradient(circle, #fff, ${color} 50%, transparent 70%)` }); setTimeout(() => b.remove(), 600); }
+function popup(p, text, cls){ const d = addFx('dmg ' + (cls || ''), p.x + (Math.random() - .5) * 40, p.y - 30, null, esc(text)); setTimeout(() => d.remove(), 1200); }
+function flash(){ const f = $('#flash'); f.style.opacity = .85; setTimeout(() => f.style.opacity = 0, 120); }
+function quake(){ stage.classList.remove('quake'); void stage.offsetWidth; stage.classList.add('quake'); }
+function retrigger(el, cls){ el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); setTimeout(() => el.classList.remove(cls), 500); }
+
+/* ================= actions ================= */
+function tierFor(coinsEach){ return coinsEach >= 100 ? 3 : coinsEach >= 30 ? 2 : coinsEach >= 5 ? 1 : 0; }
+
+async function doAttack(a){
+  const att = teams[a.team], def = teams[other(a.team)];
+  const am = att.mon, dm = def.mon;
+  const T = TYPES[am.type];
+  const tier = a.source === 'gift' ? tierFor(a.coins) : a.source === 'power' ? 2 : a.source === 'comment' && a.hits >= 10 ? 1 : 0;
+  const move = a.source === 'gift' || a.source === 'power' ? T.moves[tier] : a.source === 'comment' ? T.moves[0] : 'Tackle';
+  const mult = typeMult(am.type, dm.type);
+  const crit = Math.random() < (tier >= 2 ? .18 : .1);
+  const base = a.source === 'gift' ? a.coins * a.repeat * settings.dmgPerCoin
+             : a.source === 'comment' ? a.hits * dm.maxHp * .012
+             : a.source === 'power' ? dm.maxHp * .08 : a.power;
+  let dmg = Math.max(1, Math.round(base * mult * (crit ? 2 : 1) * (0.9 + Math.random() * .2)));
+  const absorbed = Math.min(def.shield, dmg);
+
+  let who;
+  if (a.source === 'like') who = `${teamSpan(a.team, att.label)} fans' likes`;
+  else if (a.source === 'follow') who = `${esc(short(a.nickname))}'s follow`;
+  else if (a.source === 'power') who = `⚡ ${teamSpan(a.team, att.label)} chat POWER`;
+  else if (a.source === 'comment'){
+    const names = [...new Set(a.users.map(u => short(u.nickname)))];
+    who = esc(names.slice(0, 2).join(', ')) + (names.length > 2 ? ` +${names.length - 2}` : '');
+  } else if (a.source === 'gift') who = `<span class="gold">⭐ ${esc(short(a.nickname))}</span>`;
+  else who = esc(short(a.nickname));
+  const n = a.source === 'comment' ? a.hits : a.repeat;
+  const xs = n > 1 ? ` <span class="gold">×${n}</span>` : '';
+  if (a.source === 'gift'){
+    // Gift line: sender, gift name, count and total coin value, then the move it triggered.
+    const total = a.coins * a.repeat;
+    const gname = esc(a.giftName || 'Gift') + (a.repeat > 1 ? ` ×${a.repeat}` : '');
+    say(`${who} · ${gname} <span class="gold">(${fmt(total)} 🪙)</span><br>${teamSpan(a.team, am.name)} used <b>${move.toUpperCase()}</b>!`);
+  } else say(`${who}: ${teamSpan(a.team, am.name)} used <b>${move.toUpperCase()}</b>!${xs}`);
+  await wait(450);
+
+  const from = center(att.el.mon), to = center(def.el.mon);
+  retrigger(att.el.mon, a.team === 'R' ? 'lungeR' : 'lungeB');
+  if (tier === 3){ flash(); quake(); }
+  await projectile(from, to, T.fx, tier);
+
+  def.shield -= absorbed;
+  dm.hp = Math.max(0, dm.hp - (dmg - absorbed));
+  retrigger(def.el.mon, 'hit');
+  def.el.mon.classList.add('flash'); setTimeout(() => def.el.mon.classList.remove('flash'), 90);
+  burstAt(to, T.fx[1]);
+  if (absorbed >= dmg) popup(to, '🛡 BLOCKED', 'shield');
+  else popup(to, (crit ? 'CRIT ' : '') + '-' + fmt(dmg - absorbed), crit ? 'crit' : '');
+  if (absorbed > 0 && absorbed < dmg) setTimeout(() => popup(to, '🛡 -' + fmt(absorbed), 'shield'), 150);
+  if (tier >= 2) quake();
+  sfx.hit(tier); if (crit) sfx.crit();
+  renderHp(def);
+
+  const credit = (user, nickname, d) => {
+    const rec = att.dmg.get(user) || { nickname, dmg:0 };
+    rec.dmg += d; rec.nickname = nickname; att.dmg.set(user, rec);
+  };
+  if (a.source === 'comment') for (const u of a.users) credit(u.user, u.nickname, dmg / a.hits);
+  else if (a.user) credit(a.user, a.nickname, dmg);
+  renderBoards();
+  if (a.source === 'gift'){
+    const ring = addFx('star-ring', to.x, to.y); setTimeout(() => ring.remove(), 750);
+    toast(`⭐ Thanks ${short(a.nickname)}! ${fmt(a.coins * a.repeat)} 🪙`, a.team === 'R' ? 'r' : 'b');
+  }
+
+  await wait(350);
+  if (crit && mult > 1) { say(`<span class="gold">A critical hit!</span> It's super effective!`); await wait(700); }
+  else if (crit) { say(`<span class="gold">A critical hit!</span>`); await wait(600); }
+  else if (mult > 1) { say(`It's super effective!`); await wait(600); }
+
+  if (dm.hp <= 0) await knockout(att, def);
+}
+
+async function doHeal(h){
+  const team = teams[h.team], m = team.mon;
+  const amount = Math.round(m.maxHp * h.pct);
+  const before = m.hp;
+  m.hp = Math.min(m.maxHp, m.hp + amount);
+  say(`${esc(short(h.nickname))} ${h.reason}! ${teamSpan(h.team, m.name)} recovered HP!`);
+  const p = center(team.el.mon);
+  burstAt(p, '#59ff8c');
+  popup(p, '+' + fmt(m.hp - before) + ' HP', 'heal');
+  sfx.heal();
+  renderHp(team);
+  await wait(900);
+}
+
+async function knockout(winner, loser){
+  say(`${teamSpan(loser.key, loser.mon.name)} fainted!`);
+  sfx.faint();
+  loser.el.mon.classList.add('faint');
+  await wait(1100);
+  winner.score++;
+  const mvp = [...winner.dmg.entries()].sort((a, b) => b[1].dmg - a[1].dmg)[0];
+  const mvpText = mvp ? `MVP: ${short(mvp[1].nickname)} · ${fmt(mvp[1].dmg)} dmg` : 'Victory!';
+  $('#bannerBig').textContent = `${winner.label} WINS!`;
+  $('#bannerBig').style.color = winner.key === 'R' ? '#ff6b7b' : '#6bb0ff';
+  $('#bannerSub').textContent = '👑 ' + mvpText;
+  $('#banner').classList.add('show');
+  sfx.win(); flash();
+  say(`${teamSpan(winner.key, winner.label)} wins round ${round}! ${mvp ? `👑 MVP <b>${esc(short(mvp[1].nickname))}</b>` : ''}`);
+  renderScore();
+  // banner is shown at real time (not sped up) so viewers can read it
+  await new Promise(r => setTimeout(r, Math.max(1600, 3200 / Math.sqrt(speed()))));
+  $('#banner').classList.remove('show');
+  nextRound();
+  say(`Round ${round}! Stronger monsters appear: ${teamSpan('R', teams.R.mon.name)} vs ${teamSpan('B', teams.B.mon.name)}!`);
+  await wait(1200);
+}
+
+function nextRound(){
+  round++;
+  for (const t of Object.values(teams)){ t.dmg.clear(); t.shield = 0; }
+  newMonster(teams.R); newMonster(teams.B);
+  renderBoards(); renderScore(); saveScores();
+}
+
+/* ================= event intake (from bridge or simulator) ================= */
+function handleEvent(e){
+  if (!e || !e.type) return;
+  const user = e.user || e.nickname || 'anon', nickname = e.nickname || e.user || 'Viewer';
+  switch (e.type){
+    case 'comment': {
+      const t = String(e.text || '').trim().toLowerCase();
+      if (/^(1|red|merah|#1)$/.test(t)) { joinTeam(user, nickname, 'R'); markActive(); }
+      else if (/^(2|blue|biru|#2)$/.test(t)) { joinTeam(user, nickname, 'B'); markActive(); }
+      else {
+        const cmd = /^(a|atk|attack|serang)!*$/.test(t) ? 'a' : /^(d|def|defend|tahan)!*$/.test(t) ? 'd' : /^(h|heal|sembuh)!*$/.test(t) ? 'h' : null;
+        if (cmd) chatCommand(user, nickname, cmd);
+      }
+      break;
+    }
+    case 'gift': {
+      const team = teamOf(user, nickname);
+      const coins = Math.max(1, Number(e.coins) || 1), repeat = Math.max(1, Number(e.repeat) || 1);
+      enqueue({ kind:'attack', source:'gift', team, user, nickname, coins, repeat, giftName:e.giftName });
+      break;
+    }
+    case 'like': {
+      const team = teamOf(user, nickname);
+      const t = teams[team];
+      t.likes += Math.max(1, Number(e.count) || 1);
+      while (t.likes >= settings.likesPerAttack){
+        t.likes -= settings.likesPerAttack;
+        enqueue({ kind:'attack', source:'like', team, power: Math.round(settings.dmgPerCoin * 2 * Math.sqrt(round)) });
+      }
+      renderTeamMeta(t); markActive();
+      break;
+    }
+    case 'share': {
+      const team = teamOf(user, nickname);
+      const last = lastShare.get(user) || 0;
+      if (Date.now() - last < 30000) break; // one heal per viewer every 30s
+      lastShare.set(user, Date.now());
+      enqueue({ kind:'heal', team, nickname, pct:.04, reason:'shared the live' });
+      break;
+    }
+    case 'follow': {
+      const team = teamOf(user, nickname);
+      enqueue({ kind:'attack', source:'follow', team, user, nickname, power: Math.round(settings.dmgPerCoin * 3 * Math.sqrt(round)) });
+      break;
+    }
+    case 'status': {
+      const txt = { live:`LIVE @${e.username}`, connecting:'CONNECTING…', offline:'NOT LIVE', ended:'LIVE ENDED', idle:'SIMULATOR' }[e.status] || String(e.status).toUpperCase();
+      setConn(e.status === 'live' ? 'live' : 'sim', txt);
+      break;
+    }
+  }
+}
+/* ================= comment commands (A / D / H) ================= */
+// Commands are collected for a moment and resolved together, so a busy chat
+// becomes one big team volley instead of hundreds of separate animations.
+const lastCmd = new Map();
+const pending = { R:{ a:[], d:[], h:[] }, B:{ a:[], d:[], h:[] } };
+function chatCommand(user, nickname, cmd){
+  const now = Date.now(), last = lastCmd.get(user) || 0;
+  if (now - last < settings.cmdCooldown * 1000) return; // per-viewer cooldown stops spam
+  lastCmd.set(user, now);
+  const k = teamOf(user, nickname), t = teams[k];
+  pending[k][cmd].push({ user, nickname });
+  t.power++;
+  if (t.power >= settings.powerGoal){
+    t.power -= settings.powerGoal;
+    toast(`⚡ ${t.label} chat charged a POWER move!`, k === 'R' ? 'r' : 'b');
+    pending[k].powerReady = (pending[k].powerReady || 0) + 1;
+  }
+  renderTeamMeta(t); markActive();
+}
+function flushCommands(){
+  for (const k of ['R', 'B']){
+    const p = pending[k], t = teams[k], m = t.mon, pos = center(t.el.mon);
+    if (p.d.length){
+      const before = t.shield;
+      t.shield = Math.min(m.maxHp * .3, t.shield + p.d.length * m.maxHp * .015);
+      if (t.shield > before){ popup(pos, '🛡 +' + fmt(t.shield - before), 'shield'); sfx.join(); }
+      toast(`🛡 ${short(p.d[0].nickname)}${p.d.length > 1 ? ' +' + (p.d.length - 1) : ''} defended ${t.label}`, k === 'R' ? 'r' : 'b');
+      p.d = [];
+    }
+    if (p.h.length){
+      const before = m.hp;
+      m.hp = Math.min(m.maxHp, m.hp + p.h.length * m.maxHp * .008);
+      if (m.hp > before){ burstAt(pos, '#59ff8c'); popup(pos, '+' + fmt(m.hp - before) + ' HP', 'heal'); sfx.heal(); }
+      toast(`💚 ${short(p.h[0].nickname)}${p.h.length > 1 ? ' +' + (p.h.length - 1) : ''} healed ${t.label}`, k === 'R' ? 'r' : 'b');
+      p.h = [];
+    }
+    renderHp(t);
+    if (p.a.length){ enqueue({ kind:'attack', source:'comment', team:k, hits:p.a.length, users:p.a }); p.a = []; }
+    while (p.powerReady > 0){ p.powerReady--; enqueue({ kind:'attack', source:'power', team:k }); }
+  }
+}
+setInterval(flushCommands, 1200);
+
+window.monsterBattle = { handleEvent }; // for an Electron/desktop wrapper or devtools
+
+/* ================= AFK mode ================= */
+let lastActive = Date.now(), afkIdx = 0, afkOn = false;
+const AFK_LINES = [
+  `Comment ${teamSpan('R','1')} to join ${teamSpan('R','RED')} or ${teamSpan('B','2')} to join ${teamSpan('B','BLUE')}!`,
+  `Comment <b>A</b> to attack, <b>D</b> to defend, <b>H</b> to heal!`,
+  `Every ${settings.powerGoal} team commands charge a <span class="gold">⚡ POWER move</span>!`,
+  `Tap the screen ❤ — every ${settings.likesPerAttack} likes is a free attack!`,
+  `Share the live 🔁 to heal your team's monster!`,
+  `Type advantage deals <b>×1.5</b> damage. Crits deal <b>×2</b>!`,
+  `Top damage dealer becomes the round's 👑 MVP!`,
+];
+function markActive(){ lastActive = Date.now(); afkOn = false; }
+setInterval(() => {
+  if (busy || queue.length) return;
+  if (Date.now() - lastActive > 12000){
+    if (!afkOn){ afkOn = true; afkIdx = 0; }
+    AFK_LINES[2] = `Every ${settings.powerGoal} team commands charge a <span class="gold">⚡ POWER move</span>!`;
+    AFK_LINES[3] = `Tap the screen ❤ — every ${settings.likesPerAttack} likes is a free attack!`;
+    say(AFK_LINES[afkIdx++ % AFK_LINES.length]);
+  }
+}, 4500);
+
+/* ================= WebSocket bridge ================= */
+let ws = null, wsWanted = false, wsTimer = null;
+const conn = $('#conn');
+function setConn(cls, text){ conn.className = cls; $('#connText').textContent = text; }
+function connectWs(url){
+  wsWanted = true; clearTimeout(wsTimer);
+  try{ if (ws) ws.close(); }catch(e){}
+  try{ ws = new WebSocket(url); }catch(e){ setConn('sim', 'BAD WS URL'); return; }
+  setConn('sim', 'CONNECTING…');
+  ws.onopen = () => { setConn('bridge', 'BRIDGE OK'); $('#wsBtn').textContent = 'Disconnect'; };
+  ws.onmessage = ev => { try{ handleEvent(JSON.parse(ev.data)); }catch(e){} };
+  ws.onclose = () => {
+    if (!wsWanted) return;
+    setConn('sim', 'SIMULATOR');
+    wsTimer = setTimeout(() => connectWs(url), 4000);
+  };
+}
+function disconnectWs(){ wsWanted = false; clearTimeout(wsTimer); try{ ws && ws.close(); }catch(e){} ws = null; setConn('sim', 'SIMULATOR'); $('#wsBtn').textContent = 'Connect'; }
+$('#wsBtn').onclick = () => { if (ws && wsWanted) disconnectWs(); else { const u = $('#wsUrl').value.trim(); store.set('ws', u); connectWs(u); } };
+const wsUrl = params.get('ws') || store.get('ws', 'ws://localhost:8080');
+$('#wsUrl').value = wsUrl;
+if (location.protocol !== 'https:' || wsUrl.startsWith('wss:')) connectWs(wsUrl); // auto-connect; quietly retries if no bridge is running
+
+/* ================= simulator ================= */
+const FAKE = ['NovaKid','PixelPanda','mochi.ttv','RizkyGG','luna_x','BoBaTea','Zed99','kirakira','TurboTom','sakura.chan','CaptainFry','DinoDan','Yuki','MaxPower','Ari','neon.fox','Gabe','Momo','Rex_77','StarDust'];
+let simN = 0;
+function fakeUser(){ const n = pick(Math.random, FAKE) + (Math.random() < .5 ? Math.floor(Math.random() * 99) : ''); return { user:'sim_' + n, nickname:n }; }
+function existingOrNew(){ const ids = [...players.keys()]; if (ids.length && Math.random() < .8){ const id = pick(Math.random, ids); return { user:id, nickname:players.get(id).nickname }; } return fakeUser(); }
+const GIFT_NAMES = { 1:'Rose', 5:'Finger Heart', 30:'Doughnut', 100:'Confetti', 500:'Money Gun' };
+function simGift(coins, repeat = 1){ handleEvent({ type:'gift', ...existingOrNew(), coins, repeat, giftName:GIFT_NAMES[coins] || 'Gift' }); }
+function simCmd(c){ handleEvent({ type:'comment', ...existingOrNew(), text:c }); }
+function randomEvent(){
+  const r = Math.random();
+  if (r < .15) handleEvent({ type:'comment', ...fakeUser(), text: Math.random() < .5 ? '1' : '2' });
+  else if (r < .6) simCmd(pick(Math.random, ['a','a','a','A','attack','d','h','serang']));
+  else if (r < .75) simGift(pick(Math.random, [1,1,1,1,5,5,30,100]), Math.random() < .2 ? 5 : 1);
+  else if (r < .93) handleEvent({ type:'like', ...existingOrNew(), count: 15 + Math.floor(Math.random() * 30) });
+  else handleEvent({ type:'share', ...existingOrNew() });
+}
+let autoTimer = null;
+$('#sim').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.gift) return simGift(Number(b.dataset.gift));
+  if (b.dataset.cmd) return simCmd(b.dataset.cmd);
+  switch (b.dataset.sim){
+    case 'join1': handleEvent({ type:'comment', ...fakeUser(), text:'1' }); break;
+    case 'join2': handleEvent({ type:'comment', ...fakeUser(), text:'2' }); break;
+    case 'join10': for (let i = 0; i < 10; i++) setTimeout(() => handleEvent({ type:'comment', ...fakeUser(), text: Math.random() < .5 ? '1' : '2' }), i * 120); break;
+    case 'streak': simGift(1, 15); break;
+    case 'storm': for (let i = 0; i < 40; i++) setTimeout(() => handleEvent({ type:'comment', ...fakeUser(), text: pick(Math.random, ['a','a','a','d','h']) }), i * 50); break;
+    case 'likes': handleEvent({ type:'like', ...existingOrNew(), count:100 }); break;
+    case 'share': handleEvent({ type:'share', ...fakeUser() }); break;
+    case 'follow': handleEvent({ type:'follow', ...existingOrNew() }); break;
+    case 'burst': for (let i = 0; i < 30; i++) setTimeout(randomEvent, i * 60); break;
+    case 'auto':
+      if (autoTimer){ clearInterval(autoTimer); autoTimer = null; b.textContent = 'Auto-play: off'; b.classList.remove('on'); }
+      else { autoTimer = setInterval(randomEvent, 900); b.textContent = 'Auto-play: on'; b.classList.add('on'); }
+      break;
+  }
+});
+$('#gear').onclick = () => $('#sim').classList.toggle('open');
+addEventListener('keydown', e => { if ((e.key === 's' || e.key === 'S') && e.target.tagName !== 'INPUT') $('#sim').classList.toggle('open'); });
+
+// settings inputs
+const guideIn = $('#setGuide');
+guideIn.checked = settings.showGiftGuide;
+guideIn.onchange = () => { settings.showGiftGuide = guideIn.checked; saveSettings(); showGuide(false); };
+// When enabled, the bottom cards alternate between comment commands and the gift guide.
+let guideFlip = false;
+function showGuide(flip){
+  guideFlip = settings.showGiftGuide && flip;
+  $('#gifts').hidden = guideFlip; $('#giftGuide').hidden = !guideFlip;
+}
+setInterval(() => showGuide(!guideFlip), 8000);
+const powIn = $('#setPow'), cdIn = $('#setCd');
+powIn.value = settings.powerGoal; cdIn.value = settings.cmdCooldown;
+powIn.onchange = () => { settings.powerGoal = Math.max(5, +powIn.value || 30); saveSettings(); renderTeamMeta(teams.R); renderTeamMeta(teams.B); };
+cdIn.onchange = () => { settings.cmdCooldown = Math.max(0, +cdIn.value || 0); saveSettings(); };
+const hpIn = $('#setHp'), dpcIn = $('#setDpc'), lkIn = $('#setLikes'), sndIn = $('#setSound');
+hpIn.value = settings.baseHp; dpcIn.value = settings.dmgPerCoin; lkIn.value = settings.likesPerAttack; sndIn.checked = settings.sound;
+hpIn.onchange = () => { settings.baseHp = Math.max(50, +hpIn.value || 1000); saveSettings(); };
+dpcIn.onchange = () => { settings.dmgPerCoin = Math.max(1, +dpcIn.value || 8); saveSettings(); };
+lkIn.onchange = () => { settings.likesPerAttack = Math.max(10, +lkIn.value || 100); saveSettings(); renderTeamMeta(teams.R); renderTeamMeta(teams.B); };
+sndIn.onchange = () => { settings.sound = sndIn.checked; saveSettings(); };
+$('#resetBtn').onclick = () => { teams.R.score = teams.B.score = 0; round = 0; nextRound(); say('Scores reset. A fresh battle begins!'); };
+$('#skipBtn').onclick = () => { nextRound(); say(`Skipped to round ${round}.`); };
+
+/* ================= desktop app hooks ================= */
+if (window.desktop){
+  $('#deskSec').hidden = false; $('#bridgeSec').hidden = true;
+  const userIn = $('#deskUser'), st = $('#deskStatus');
+  userIn.value = store.get('tiktokUser', '');
+  const LABEL = { idle:'Not connected.', connecting:'Connecting to TikTok…', live:'🔴 Connected! Viewers now control the battle.',
+                  offline:'Could not connect. Is your LIVE running? Retrying automatically…', ended:'Your LIVE has ended.' };
+  const show = s => { st.textContent = (LABEL[s.status] || s.status) + (s.status === 'offline' && s.detail ? ' (' + s.detail.slice(0, 120) + ')' : ''); };
+  window.desktop.onStatus(show);
+  window.desktop.onTogglePanel(() => $('#sim').classList.toggle('open'));
+  window.desktop.onShowHelp(() => { $('#sim').classList.add('open'); st.textContent = 'Start your LIVE in TikTok LIVE Studio, type your username here, press Go live, then add this window as a Window Capture source.'; });
+  $('#deskGo').onclick = () => { const u = userIn.value.trim(); if (!u){ st.textContent = 'Type your TikTok username first.'; userIn.focus(); return; } store.set('tiktokUser', u); window.desktop.connect(u).then(show); };
+  $('#deskStop').onclick = () => window.desktop.disconnect().then(show);
+  if (!userIn.value) $('#sim').classList.add('open');
+}
+
+/* ================= boot ================= */
+newMonster(teams.R); newMonster(teams.B);
+renderTeamMeta(teams.R); renderTeamMeta(teams.B); renderBoards(); renderScore();
+say(`A wild battle begins! ${teamSpan('R', teams.R.mon.name)} vs ${teamSpan('B', teams.B.mon.name)}!`);
+lastActive = Date.now() - 8000; // start AFK prompts soon
+})();
+</script>
+</body>
+</html>

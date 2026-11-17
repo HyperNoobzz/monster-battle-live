@@ -1,0 +1,13 @@
+{
+  "name": "monster-battle-bridge",
+  "version": "1.0.0",
+  "description": "Relays TikTok Live events (comments, gifts, likes, shares) to the Monster Battle game over WebSocket.",
+  "main": "bridge.js",
+  "scripts": {
+    "start": "node bridge.js"
+  },
+  "dependencies": {
+    "tiktok-live-connector": "^2.5.0",
+    "ws": "^8.18.0"
+  }
+}

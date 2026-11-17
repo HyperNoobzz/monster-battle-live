@@ -1,0 +1,45 @@
+name: Build Windows app
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build portable .exe
+        run: npx electron-builder --win portable --x64 --publish never -c.win.signAndEditExecutable=true
+
+      - name: Zip the web version
+        shell: pwsh
+        run: Compress-Archive -Path index.html, README.md, bridge/bridge.js, bridge/package.json -DestinationPath dist/MonsterBattleLive-web.zip
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: Monster Battle Live v1.0.${{ github.run_number }}
+          make_latest: true
+          body: |
+            **Windows app:** download `MonsterBattleLive-portable.exe` below and double-click it. No install needed.
+            If Windows says "Windows protected your PC", click **More info**, then **Run anyway**.
+
+            **Web version:** `MonsterBattleLive-web.zip` (open `index.html`; see README for the TikTok bridge).
+          files: |
+            dist/MonsterBattleLive-portable.exe
+            dist/MonsterBattleLive-web.zip
