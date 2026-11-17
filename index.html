@@ -963,15 +963,18 @@ function setConn(cls, text){ conn.className = cls; $('#connText').textContent = 
 function connectWs(url){
   wsWanted = true; clearTimeout(wsTimer);
   try{ if (ws) ws.close(); }catch(e){}
-  try{ ws = new WebSocket(url); }catch(e){ setConn('sim', 'BAD WS URL'); return; }
+  let sock;
+  try{ sock = ws = new WebSocket(url); }catch(e){ setConn('sim', 'BAD WS URL'); return; }
   setConn('sim', 'CONNECTING…');
   const isTf = url === TIKFINITY_URL;
   let gotTfEvent = false;
-  ws.onopen = () => {
+  sock.onopen = () => {
+    if (sock !== ws) return;
     setConn('bridge', isTf ? 'TIKFINITY' : 'BRIDGE OK'); $('#wsBtn').textContent = 'Disconnect';
     if (isTf) tfStatus('Connected to TikFinity. Comments and gifts from your LIVE now control the game.');
   };
-  ws.onmessage = ev => {
+  sock.onmessage = ev => {
+    if (sock !== ws) return;
     let msg; try{ msg = JSON.parse(ev.data); }catch(e){ return; }
     if (isTf){
       const e = fromTikFinity(msg);
@@ -979,8 +982,8 @@ function connectWs(url){
       if (e) handleEvent(e);
     } else handleEvent(msg);
   };
-  ws.onclose = () => {
-    if (!wsWanted) return;
+  sock.onclose = () => {
+    if (!wsWanted || sock !== ws) return; // ignore sockets that were replaced
     setConn('sim', isTf ? 'NO TIKFINITY' : 'SIMULATOR');
     if (isTf) tfStatus('TikFinity not found. Is TikFinity Desktop open on this PC? Retrying…');
     wsTimer = setTimeout(() => connectWs(url), 4000);
