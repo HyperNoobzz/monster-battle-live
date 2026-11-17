@@ -23,7 +23,7 @@ jobs:
         run: npm ci
 
       - name: Build portable .exe
-        run: npx electron-builder --win portable --x64 --publish never -c.win.signAndEditExecutable=true
+        run: npx electron-builder --win portable --x64 --publish never
 
       - name: Zip the web version
         shell: pwsh

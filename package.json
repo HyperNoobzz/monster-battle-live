@@ -32,8 +32,7 @@
       "output": "dist"
     },
     "win": {
-      "icon": "desktop/icon.png",
-      "signAndEditExecutable": false
+      "icon": "desktop/icon.png"
     },
     "mac": {
       "icon": "desktop/icon.png",
