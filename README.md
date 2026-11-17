@@ -6,6 +6,11 @@ Every push to `main` builds a new `.exe` automatically (GitHub Actions → *Buil
 
 Viewers pick a team in the comments and send gifts to make their team's monster attack.
 
+## Characters
+RED is a cartoon **#7** striker (red shirt, green shorts) named RONALDO, and BLUE is a cartoon **#10** striker (sky-blue and white stripes) named MESSI.
+Both are original chibi drawings made in code: no photos, club crests or brand logos. Attacks are kicked footballs.
+Both names can be changed in the ⚙ panel (*RED player name* / *BLUE player name*). Viewers can also join by commenting `ronaldo`/`cr7` or `messi`/`lm10`.
+
 ## How viewers play
 Nothing on screen mentions gifts. Everything shown to viewers is comment-, like- and share-based.
 
