@@ -266,6 +266,9 @@ body.clean #gear{display:none}
     <button data-sim="burst">Burst ×30</button>
     <button id="autoBtn" data-sim="auto">Auto-play: off</button>
   </div>
+  <h3>TIKFINITY</h3>
+  <div class="btns"><button id="tfBtn">Use TikFinity</button></div>
+  <div class="note" id="tfStatus">Already using TikFinity? Open TikFinity Desktop, connect it to your LIVE, then press Use TikFinity.</div>
   <div id="deskSec" hidden>
     <h3>TIKTOK LIVE</h3>
     <label for="deskUser">Your username <input id="deskUser" placeholder="@yourname"></label>
@@ -923,6 +926,36 @@ setInterval(() => {
   }
 }, 4500);
 
+/* ================= TikFinity ================= */
+// TikFinity Desktop serves live events on this local WebSocket as {event, data},
+// with data in TikTok-Live-Connector form. Convert them to the game's own events.
+const TIKFINITY_URL = 'ws://localhost:21213/';
+function fromTikFinity(msg){
+  const ev = String(msg.event || msg.type || '').toLowerCase();
+  const d = msg.data || msg;
+  const u = d.user || d;
+  const user = u.uniqueId || d.uniqueId || u.userId || d.userId || u.nickname || 'viewer';
+  const nickname = u.nickname || d.nickname || user;
+  const base = { user:String(user), nickname:String(nickname) };
+  if (ev === 'chat' || ev === 'comment') return { type:'comment', ...base, text:String(d.comment ?? d.text ?? '') };
+  if (ev === 'gift'){
+    const g = d.giftDetails || d.gift || {};
+    const giftType = d.giftType ?? g.giftType ?? g.gift_type;
+    if (giftType === 1 && d.repeatEnd === false) return null; // count streak gifts once, when the streak ends
+    return { type:'gift', ...base, coins:Number(d.diamondCount ?? g.diamondCount ?? 1) || 1,
+             repeat:Number(d.repeatCount ?? 1) || 1, giftName:String(d.giftName ?? g.giftName ?? 'Gift') };
+  }
+  if (ev === 'like') return { type:'like', ...base, count:Number(d.likeCount ?? 1) || 1 };
+  if (ev === 'share') return { type:'share', ...base };
+  if (ev === 'follow') return { type:'follow', ...base };
+  if (ev === 'social'){
+    const t = String(d.displayType || d.label || '').toLowerCase();
+    if (t.includes('share')) return { type:'share', ...base };
+    if (t.includes('follow')) return { type:'follow', ...base };
+  }
+  return null;
+}
+
 /* ================= WebSocket bridge ================= */
 let ws = null, wsWanted = false, wsTimer = null;
 const conn = $('#conn');
@@ -932,11 +965,24 @@ function connectWs(url){
   try{ if (ws) ws.close(); }catch(e){}
   try{ ws = new WebSocket(url); }catch(e){ setConn('sim', 'BAD WS URL'); return; }
   setConn('sim', 'CONNECTING…');
-  ws.onopen = () => { setConn('bridge', 'BRIDGE OK'); $('#wsBtn').textContent = 'Disconnect'; };
-  ws.onmessage = ev => { try{ handleEvent(JSON.parse(ev.data)); }catch(e){} };
+  const isTf = url === TIKFINITY_URL;
+  let gotTfEvent = false;
+  ws.onopen = () => {
+    setConn('bridge', isTf ? 'TIKFINITY' : 'BRIDGE OK'); $('#wsBtn').textContent = 'Disconnect';
+    if (isTf) tfStatus('Connected to TikFinity. Comments and gifts from your LIVE now control the game.');
+  };
+  ws.onmessage = ev => {
+    let msg; try{ msg = JSON.parse(ev.data); }catch(e){ return; }
+    if (isTf){
+      const e = fromTikFinity(msg);
+      if (e && !gotTfEvent){ gotTfEvent = true; setConn('live', 'LIVE · TIKFINITY'); }
+      if (e) handleEvent(e);
+    } else handleEvent(msg);
+  };
   ws.onclose = () => {
     if (!wsWanted) return;
-    setConn('sim', 'SIMULATOR');
+    setConn('sim', isTf ? 'NO TIKFINITY' : 'SIMULATOR');
+    if (isTf) tfStatus('TikFinity not found. Is TikFinity Desktop open on this PC? Retrying…');
     wsTimer = setTimeout(() => connectWs(url), 4000);
   };
 }
@@ -944,7 +990,22 @@ function disconnectWs(){ wsWanted = false; clearTimeout(wsTimer); try{ ws && ws.
 $('#wsBtn').onclick = () => { if (ws && wsWanted) disconnectWs(); else { const u = $('#wsUrl').value.trim(); store.set('ws', u); connectWs(u); } };
 const wsUrl = params.get('ws') || store.get('ws', 'ws://localhost:8080');
 $('#wsUrl').value = wsUrl;
-if (location.protocol !== 'https:' || wsUrl.startsWith('wss:')) connectWs(wsUrl); // auto-connect; quietly retries if no bridge is running
+let source = params.has('tikfinity') ? 'tikfinity' : store.get('source', 'bridge');
+function tfStatus(t){ $('#tfStatus').textContent = t; }
+function renderSource(){ $('#tfBtn').textContent = source === 'tikfinity' ? 'Stop using TikFinity' : 'Use TikFinity'; $('#tfBtn').classList.toggle('on', source === 'tikfinity'); }
+$('#tfBtn').onclick = () => {
+  source = source === 'tikfinity' ? 'bridge' : 'tikfinity';
+  store.set('source', source); renderSource();
+  if (source === 'tikfinity'){
+    if (window.desktop) window.desktop.disconnect();   // TikFinity replaces the built-in TikTok connection
+    connectWs(TIKFINITY_URL);
+  } else {
+    tfStatus('TikFinity is off. The game uses its own TikTok connection again.');
+    connectWs(wsUrl);
+  }
+};
+renderSource();
+if (location.protocol !== 'https:' || wsUrl.startsWith('wss:')) connectWs(source === 'tikfinity' ? TIKFINITY_URL : wsUrl); // auto-connect; quietly retries
 
 /* ================= simulator ================= */
 const FAKE = ['NovaKid','PixelPanda','mochi.ttv','RizkyGG','luna_x','BoBaTea','Zed99','kirakira','TurboTom','sakura.chan','CaptainFry','DinoDan','Yuki','MaxPower','Ari','neon.fox','Gabe','Momo','Rex_77','StarDust'];
@@ -1032,9 +1093,14 @@ if (window.desktop){
   window.desktop.onStatus(show);
   window.desktop.onTogglePanel(() => $('#sim').classList.toggle('open'));
   window.desktop.onShowHelp(() => { $('#sim').classList.add('open'); st.textContent = 'Start your LIVE in TikTok LIVE Studio, type your username here, press Go live, then add this window as a Window Capture source.'; });
-  $('#deskGo').onclick = () => { const u = userIn.value.trim(); if (!u){ st.textContent = 'Type your TikTok username first.'; userIn.focus(); return; } store.set('tiktokUser', u); window.desktop.connect(u).then(show); };
+  $('#deskGo').onclick = () => {
+    const u = userIn.value.trim(); if (!u){ st.textContent = 'Type your TikTok username first.'; userIn.focus(); return; }
+    store.set('tiktokUser', u);
+    if (source === 'tikfinity'){ source = 'bridge'; store.set('source', source); renderSource(); connectWs(wsUrl); }
+    window.desktop.connect(u).then(show);
+  };
   $('#deskStop').onclick = () => window.desktop.disconnect().then(show);
-  if (!userIn.value) $('#sim').classList.add('open');
+  if (!userIn.value && source !== 'tikfinity') $('#sim').classList.add('open');
 }
 
 /* ================= boot ================= */

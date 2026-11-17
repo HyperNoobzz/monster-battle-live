@@ -50,6 +50,14 @@ Run `MonsterBattleLive-portable.exe`. Nothing needs installing, and Node.js is n
 Window menu: Always on top, Full screen (F11), and size presets up to 1080×1920.
 Windows SmartScreen may warn because the app is not code-signed: click "More info", then "Run anyway".
 
+### Using TikFinity instead
+If you already run **TikFinity Desktop**, the game can read your LIVE from it, so you don't need the built-in connection.
+1. Open TikFinity Desktop on the same PC and connect it to your LIVE.
+2. In the game, open ⚙ and press **Use TikFinity**. The header shows `LIVE · TIKFINITY` once the first comment, like or gift arrives.
+
+The game reads TikFinity's local event feed at `ws://localhost:21213/`. The choice is remembered; press **Stop using TikFinity** to switch back.
+The web version also accepts `index.html?tikfinity`.
+
 ### Building the desktop app yourself
 ```
 npm install
