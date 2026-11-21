@@ -63,7 +63,7 @@ Gifts work alongside comments. A gift makes the sender's team monster attack rig
 The sender's name appears in gold with a ⭐, the gift's picture pops up above their player, and their damage counts toward MVP.
 
 **Gift guide:** the bottom cards switch every 8 seconds between the comment commands and a gift guide. Each gift card shows the gift's picture, name, coin value, effect and approximate damage (coins × *Support damage per coin*, default 8).
-The pictures are TikTok's own gift images, loaded live from TikTok when the game is connected (the built-in connection also loads the room's full gift list with prices; with TikFinity, pictures are learned as gifts arrive). They are remembered on that computer. Until a picture is known, an emoji stands in (🌹 💗 🍩 🎉).
+The pictures are TikTok's own gift images, loaded live from TikTok when the game is connected (each picture is learned the first time someone sends that gift; loading the room's full gift list up front needs a paid Euler Stream plan, so the game only tries it and carries on if it fails). They are remembered on that computer. Until a picture is known, an emoji stands in (🌹 💗 🍩 🎉).
 Turn the guide off with **Show gift guide on screen** in the ⚙ panel.
 
 ## Desktop app (Windows)
