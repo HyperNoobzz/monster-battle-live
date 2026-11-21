@@ -8,7 +8,7 @@
     "start": "electron .",
     "bridge": "node bridge/bridge.js",
     "dist:win": "electron-builder --win portable zip --x64",
-    "dist:mac": "electron-builder --mac dmg",
+    "dist:mac": "electron-builder --mac dmg --arm64 --x64",
     "dist:linux": "electron-builder --linux AppImage"
   },
   "dependencies": {
@@ -36,13 +36,27 @@
     },
     "mac": {
       "icon": "desktop/icon.png",
-      "category": "public.app-category.games"
+      "category": "public.app-category.games",
+      "identity": "-",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "MonsterBattleLive-mac-${arch}.${ext}"
     },
     "linux": {
       "icon": "desktop/icon.png"
     },
     "portable": {
       "artifactName": "MonsterBattleLive-portable.exe"
+    },
+    "dmg": {
+      "title": "Monster Battle Live"
     }
   },
   "repository": "https://github.com/HyperNoobzz/monster-battle-live",

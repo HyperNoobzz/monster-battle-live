@@ -2,7 +2,20 @@
 
 **Download the latest Windows app:** [MonsterBattleLive-portable.exe](https://github.com/HyperNoobzz/monster-battle-live/releases/latest/download/MonsterBattleLive-portable.exe) · [all releases](https://github.com/HyperNoobzz/monster-battle-live/releases)
 
-Every push to `main` builds a new `.exe` automatically (GitHub Actions → *Build Windows app*).
+**Mac:** [Apple Silicon (M1–M4)](https://github.com/HyperNoobzz/monster-battle-live/releases/latest/download/MonsterBattleLive-mac-arm64.dmg) · [Intel](https://github.com/HyperNoobzz/monster-battle-live/releases/latest/download/MonsterBattleLive-mac-x64.dmg)
+
+Every push to `main` builds new Windows and Mac apps automatically (GitHub Actions → *Build apps*).
+
+### Opening the Mac app the first time
+The app is not signed with a paid Apple developer certificate, so macOS blocks it the first time.
+1. Open the `.dmg` and drag **Monster Battle Live** into **Applications**.
+2. Open it once. macOS says it can't be opened. Click **Done**.
+3. Open **System Settings → Privacy & Security**, scroll down, and click **Open Anyway** next to "Monster Battle Live", then confirm.
+
+If macOS instead says the app "is damaged", run this once in Terminal, then open the app again:
+```
+xattr -cr "/Applications/Monster Battle Live.app"
+```
 
 Viewers pick a team in the comments and send gifts to make their team's monster attack.
 
