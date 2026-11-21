@@ -126,7 +126,17 @@ body.transparent{background:transparent}
 /* ---------- bottom panel ---------- */
 #panel{position:absolute;top:724px;left:0;right:0;bottom:0;background:#141831;color:#fff;padding:10px 12px}
 #gifts,#giftGuide{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-#giftGuide .c{font-size:12px}
+#gifts .gcard,#giftGuide .gcard{height:104px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:0}
+#giftGuide .gcard>*{flex-shrink:0}
+#giftGuide .gi{height:36px;font-size:29px;line-height:36px}
+#giftGuide .gi img{width:36px;height:36px;object-fit:contain;display:block}
+#giftGuide .gn{font-weight:900;font-size:12.5px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#giftGuide .gc{font-family:var(--pixel);font-size:10px;color:var(--gold);margin:2px 0 1px}
+#giftGuide .d{font-size:10.5px;line-height:1.15}
+#msg img{width:28px;height:28px;object-fit:contain;vertical-align:-7px}
+.giftpop{position:absolute;font-size:54px;line-height:1;animation:giftpop 1.3s ease-out forwards;pointer-events:none}
+.giftpop img{width:72px;height:72px;object-fit:contain;display:block}
+@keyframes giftpop{0%{transform:translate(-50%,-50%) scale(.3);opacity:0}18%{transform:translate(-50%,-50%) scale(1.25);opacity:1}75%{transform:translate(-50%,-60%) scale(1);opacity:1}100%{transform:translate(-50%,-110%) scale(.9);opacity:0}}
 .dmg.star{color:#ffe14a;font-size:26px}
 .star-ring{position:absolute;border-radius:50%;transform:translate(-50%,-50%);border:6px solid #ffe14a;animation:burst .7s ease-out forwards}
 .gcard{background:#232a4d;border-radius:8px;padding:6px 4px;text-align:center;border-bottom:3px solid #0006}
@@ -219,12 +229,7 @@ body.clean #gear{display:none}
       <div class="gcard"><div class="c">H</div><div class="n">Heal</div><div class="d">restore HP</div></div>
       <div class="gcard t3"><div class="c">⚡</div><div class="n">POWER</div><div class="d" id="powHint">every 30 commands</div></div>
     </div>
-    <div id="giftGuide" hidden>
-      <div class="gcard"><div class="c">1+ 🪙</div><div class="n">Gift</div><div class="d">quick hit</div></div>
-      <div class="gcard"><div class="c">5+ 🪙</div><div class="n">Gift</div><div class="d">special move</div></div>
-      <div class="gcard"><div class="c">30+ 🪙</div><div class="n">Gift</div><div class="d">power move</div></div>
-      <div class="gcard t3"><div class="c">100+ 🪙</div><div class="n">Gift</div><div class="d">ULTIMATE</div></div>
-    </div>
+    <div id="giftGuide" hidden></div>
     <div id="boards">
       <div class="board r"><h4><span class="tl-R">RED</span> TOP FANS</h4><ol id="topR"></ol></div>
       <div class="board b"><h4><span class="tl-B">BLUE</span> TOP FANS</h4><ol id="topB"></ol></div>
@@ -309,7 +314,7 @@ const store = {
 };
 
 /* ================= settings ================= */
-const settings = Object.assign({ baseHp: 1000, dmgPerCoin: 8, likesPerAttack: 100, powerGoal: 30, cmdCooldown: 3, showGiftGuide: false, nameR: 'RONALDO', nameB: 'MESSI', sound: true }, store.get('settings', {}));
+const settings = Object.assign({ baseHp: 1000, dmgPerCoin: 8, likesPerAttack: 100, powerGoal: 30, cmdCooldown: 3, showGiftGuide: true, nameR: 'RONALDO', nameB: 'MESSI', sound: true }, store.get('settings', {}));
 function saveSettings(){ store.set('settings', settings); }
 
 /* ================= scaling ================= */
@@ -689,6 +694,51 @@ function flash(){ const f = $('#flash'); f.style.opacity = .85; setTimeout(() =>
 function quake(){ stage.classList.remove('quake'); void stage.offsetWidth; stage.classList.add('quake'); }
 function retrigger(el, cls){ el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); setTimeout(() => el.classList.remove(cls), 500); }
 
+/* ================= gift pictures & guide ================= */
+// Real gift pictures come from TikTok at runtime (gift events and the room's gift list).
+// They are remembered on this computer; until one is known, an emoji stands in.
+const GIFT_TIERS = [
+  { min:1,   max:4,        effect:'Quick hit',    emoji:'🌹', names:['Rose','TikTok','GG'],             def:['Rose', 1] },
+  { min:5,   max:29,       effect:'Special move', emoji:'💗', names:['Finger Heart','Heart Me'],         def:['Finger Heart', 5] },
+  { min:30,  max:99,       effect:'Power move',   emoji:'🍩', names:['Doughnut','Cap'],                   def:['Doughnut', 30] },
+  { min:100, max:Infinity, effect:'ULTIMATE',     emoji:'🎉', names:['Confetti','Hand Hearts','Hand Heart'], def:['Confetti', 100] },
+];
+const giftImg = store.get('giftImg', {});
+let giftCatalog = store.get('giftCatalog', []);
+function tierOfCoins(c){ return GIFT_TIERS.findIndex(t => c >= t.min && c <= t.max); }
+function learnGift(name, image){
+  if (!name || !/^https:\/\//.test(image || '')) return false;
+  const k = String(name).toLowerCase();
+  if (giftImg[k] === image) return false;
+  giftImg[k] = image; store.set('giftImg', giftImg); return true;
+}
+function giftIcon(name, coins){
+  const t = GIFT_TIERS[Math.max(0, tierOfCoins(coins))], emoji = coins >= 500 ? '💎' : t.emoji;
+  const url = giftImg[String(name || '').toLowerCase()];
+  return url ? `<img src="${esc(url)}" alt="" referrerpolicy="no-referrer" onerror="this.outerHTML='${emoji}'">` : emoji;
+}
+function pickTierGift(t){
+  const inRange = giftCatalog.filter(g => g.coins >= t.min && g.coins <= t.max);
+  for (const n of t.names){ const g = inRange.find(x => x.name.toLowerCase() === n.toLowerCase()); if (g) return g; }
+  const withPic = inRange.filter(g => giftImg[g.name.toLowerCase()]).sort((a, b) => a.coins - b.coins)[0];
+  return withPic || { name:t.def[0], coins:t.def[1] };
+}
+function renderGiftGuide(){
+  $('#giftGuide').innerHTML = GIFT_TIERS.map((t, i) => {
+    const g = pickTierGift(t);
+    return `<div class="gcard${i === 3 ? ' t3' : ''}"><div class="gi">${giftIcon(g.name, g.coins)}</div>
+      <div class="gn">${esc(g.name)}</div><div class="gc">${fmt(g.coins)} 🪙</div>
+      <div class="d">${t.effect}<br>~${fmt(g.coins * settings.dmgPerCoin)} dmg</div></div>`;
+  }).join('');
+}
+function setGiftCatalog(list){
+  giftCatalog = (list || []).filter(g => g && g.name && g.coins > 0)
+    .map(g => ({ name:String(g.name), coins:Number(g.coins) })).slice(0, 400);
+  store.set('giftCatalog', giftCatalog);
+  for (const g of list || []) if (g && g.name) learnGift(g.name, g.image);
+  renderGiftGuide();
+}
+
 /* ================= actions ================= */
 function tierFor(coinsEach){ return coinsEach >= 100 ? 3 : coinsEach >= 30 ? 2 : coinsEach >= 5 ? 1 : 0; }
 
@@ -720,7 +770,9 @@ async function doAttack(a){
   if (a.source === 'gift'){
     // Gift line: sender, gift name, count and total coin value, then the move it triggered.
     const total = a.coins * a.repeat;
-    const gname = esc(a.giftName || 'Gift') + (a.repeat > 1 ? ` ×${a.repeat}` : '');
+    const gname = giftIcon(a.giftName, a.coins) + ' ' + esc(a.giftName || 'Gift') + (a.repeat > 1 ? ` ×${a.repeat}` : '');
+    const from0 = center(att.el.mon);
+    const pop = addFx('giftpop', from0.x, from0.y - (a.team === 'R' ? 135 : 105), null, giftIcon(a.giftName, a.coins)); setTimeout(() => pop.remove(), 1400);
     say(`${who} · ${gname} <span class="gold">(${fmt(total)} 🪙)</span><br>${teamSpan(a.team, am.name)} used <b>${move.toUpperCase()}</b>!`);
   } else say(`${who}: ${teamSpan(a.team, am.name)} used <b>${move.toUpperCase()}</b>!${xs}`);
   await wait(450);
@@ -824,9 +876,11 @@ function handleEvent(e){
     case 'gift': {
       const team = teamOf(user, nickname);
       const coins = Math.max(1, Number(e.coins) || 1), repeat = Math.max(1, Number(e.repeat) || 1);
+      if (learnGift(e.giftName, e.image)) renderGiftGuide();
       enqueue({ kind:'attack', source:'gift', team, user, nickname, coins, repeat, giftName:e.giftName });
       break;
     }
+    case 'giftlist': setGiftCatalog(e.gifts); break;
     case 'like': {
       const team = teamOf(user, nickname);
       const t = teams[team];
@@ -943,7 +997,8 @@ function fromTikFinity(msg){
     const giftType = d.giftType ?? g.giftType ?? g.gift_type;
     if (giftType === 1 && d.repeatEnd === false) return null; // count streak gifts once, when the streak ends
     return { type:'gift', ...base, coins:Number(d.diamondCount ?? g.diamondCount ?? 1) || 1,
-             repeat:Number(d.repeatCount ?? 1) || 1, giftName:String(d.giftName ?? g.giftName ?? 'Gift') };
+             repeat:Number(d.repeatCount ?? 1) || 1, giftName:String(d.giftName ?? g.giftName ?? 'Gift'),
+             image:String(d.giftPictureUrl ?? (g.giftImage && g.giftImage.url && g.giftImage.url[0]) ?? '') };
   }
   if (ev === 'like') return { type:'like', ...base, count:Number(d.likeCount ?? 1) || 1 };
   if (ev === 'share') return { type:'share', ...base };
@@ -1079,7 +1134,7 @@ cdIn.onchange = () => { settings.cmdCooldown = Math.max(0, +cdIn.value || 0); sa
 const hpIn = $('#setHp'), dpcIn = $('#setDpc'), lkIn = $('#setLikes'), sndIn = $('#setSound');
 hpIn.value = settings.baseHp; dpcIn.value = settings.dmgPerCoin; lkIn.value = settings.likesPerAttack; sndIn.checked = settings.sound;
 hpIn.onchange = () => { settings.baseHp = Math.max(50, +hpIn.value || 1000); saveSettings(); };
-dpcIn.onchange = () => { settings.dmgPerCoin = Math.max(1, +dpcIn.value || 8); saveSettings(); };
+dpcIn.onchange = () => { settings.dmgPerCoin = Math.max(1, +dpcIn.value || 8); saveSettings(); renderGiftGuide(); };
 lkIn.onchange = () => { settings.likesPerAttack = Math.max(10, +lkIn.value || 100); saveSettings(); renderTeamMeta(teams.R); renderTeamMeta(teams.B); };
 sndIn.onchange = () => { settings.sound = sndIn.checked; saveSettings(); };
 $('#resetBtn').onclick = () => { teams.R.score = teams.B.score = 0; round = 0; nextRound(); say('Scores reset. A fresh battle begins!'); };
@@ -1107,7 +1162,7 @@ if (window.desktop){
 }
 
 /* ================= boot ================= */
-newMonster(teams.R); newMonster(teams.B); applyNames();
+newMonster(teams.R); newMonster(teams.B); applyNames(); renderGiftGuide();
 renderTeamMeta(teams.R); renderTeamMeta(teams.B); renderBoards(); renderScore();
 say(`Kick-off! ${teamSpan('R', teams.R.mon.name)} vs ${teamSpan('B', teams.B.mon.name)}!`);
 lastActive = Date.now() - 8000; // start AFK prompts soon

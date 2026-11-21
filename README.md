@@ -51,8 +51,11 @@ Gifts work alongside comments. A gift makes the sender's team monster attack rig
 | 30–99 coins | Power move (screen shake) |
 | 100+ coins | ULTIMATE (flash + shake) |
 
-The sender's name appears in gold with a ⭐ and a "Thank you" message, and their damage counts toward MVP.
-By default the screen never asks for gifts. To show the gift table to viewers, turn on **Show gift guide on screen** in the ⚙ panel; the bottom cards then switch between comment commands and the gift guide every 8 seconds.
+The sender's name appears in gold with a ⭐, the gift's picture pops up above their player, and their damage counts toward MVP.
+
+**Gift guide:** the bottom cards switch every 8 seconds between the comment commands and a gift guide. Each gift card shows the gift's picture, name, coin value, effect and approximate damage (coins × *Support damage per coin*, default 8).
+The pictures are TikTok's own gift images, loaded live from TikTok when the game is connected (the built-in connection also loads the room's full gift list with prices; with TikFinity, pictures are learned as gifts arrive). They are remembered on that computer. Until a picture is known, an emoji stands in (🌹 💗 🍩 🎉).
+Turn the guide off with **Show gift guide on screen** in the ⚙ panel.
 
 ## Desktop app (Windows)
 Run `MonsterBattleLive-portable.exe`. Nothing needs installing, and Node.js is not required.

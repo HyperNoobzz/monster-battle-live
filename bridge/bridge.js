@@ -24,6 +24,7 @@ function userOf(d) {
 function createBridge({ port = 8080, log = console.log, onStatus = () => {} } = {}) {
   const wss = new WebSocketServer({ port, host: '127.0.0.1' });
   let status = 'idle', username = '', conn = null, retryTimer = null, retryDelay = 5000, stopped = true;
+  let giftList = null; // [{ name, coins, image }] from TikTok, sent to the game for the gift guide
 
   function broadcast(msg) {
     const json = JSON.stringify(msg);
@@ -34,7 +35,10 @@ function createBridge({ port = 8080, log = console.log, onStatus = () => {} } = 
     broadcast({ type: 'status', status: s, username });
     onStatus({ status: s, username, detail });
   }
-  wss.on('connection', ws => ws.send(JSON.stringify({ type: 'status', status, username })));
+  wss.on('connection', ws => {
+    ws.send(JSON.stringify({ type: 'status', status, username }));
+    if (giftList) ws.send(JSON.stringify({ type: 'giftlist', gifts: giftList }));
+  });
   wss.on('error', err => log('[bridge] WebSocket server error: ' + err.message));
   log(`[bridge] WebSocket server on ws://localhost:${port}`);
 
@@ -48,7 +52,8 @@ function createBridge({ port = 8080, log = console.log, onStatus = () => {} } = 
       const giftType = det.giftType != null ? det.giftType : d.giftType;
       if (giftType === 1 && !d.repeatEnd) return; // count streak gifts once, when the streak ends
       const coins = det.diamondCount || d.diamondCount || 1, repeat = d.repeatCount || 1;
-      broadcast({ type: 'gift', ...userOf(d), giftName: det.giftName || 'Gift', coins, repeat });
+      const image = (det.giftImage && det.giftImage.url && det.giftImage.url[0]) || d.giftPictureUrl || '';
+      broadcast({ type: 'gift', ...userOf(d), giftName: det.giftName || 'Gift', coins, repeat, image });
       log(`[gift] ${userOf(d).nickname}: ${det.giftName || 'gift'} x${repeat} (${coins} coins each)`);
     });
     c.on(WebcastEvent.LIKE, d => broadcast({ type: 'like', ...userOf(d), count: d.likeCount || 1, total: d.totalLikeCount || 0 }));
@@ -68,13 +73,26 @@ function createBridge({ port = 8080, log = console.log, onStatus = () => {} } = 
     log(`[tiktok] connecting to @${username} ...`);
     setStatus('connecting');
     conn.connect()
-      .then(state => { retryDelay = 5000; log(`[tiktok] connected, roomId ${state.roomId}`); setStatus('live'); })
+      .then(state => { retryDelay = 5000; log(`[tiktok] connected, roomId ${state.roomId}`); setStatus('live'); loadGiftList(); })
       .catch(err => {
         const msg = err && err.message ? err.message : String(err);
         log('[tiktok] connect failed: ' + msg);
         setStatus('offline', msg);
         scheduleRetry();
       });
+  }
+
+  // Gift names, coin prices and pictures for this room (shown in the game's gift guide).
+  function loadGiftList() {
+    if (!conn || typeof conn.fetchAvailableGifts !== 'function') return;
+    conn.fetchAvailableGifts().then(res => {
+      const raw = Array.isArray(res) ? res : (res && (res.gifts || res.giftList || (res.data && res.data.gifts))) || [];
+      const pic = g => { const im = g.image || g.icon || g.giftImage || {}; const l = im.url_list || im.urlList || im.url || []; return Array.isArray(l) ? l[0] || '' : ''; };
+      giftList = raw.map(g => ({ name: g.name || g.giftName, coins: g.diamond_count ?? g.diamondCount, image: pic(g) }))
+                    .filter(g => g.name && g.coins > 0);
+      log(`[tiktok] loaded ${giftList.length} gifts`);
+      if (giftList.length) broadcast({ type: 'giftlist', gifts: giftList });
+    }).catch(err => log('[tiktok] could not load gift list: ' + (err && err.message ? err.message : err)));
   }
 
   function disconnect() {
