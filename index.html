@@ -1158,7 +1158,7 @@ if (window.desktop){
   const LABEL = { idle:'Not connected.', connecting:'Connecting to TikTok…', live:'🔴 Connected! Viewers now control the battle.',
                   offline:'Could not connect. Retrying automatically…', ended:'Your LIVE has ended.',
                   notlive:'⏳ @{user} is not live yet. Start your LIVE on TikTok; the game checks again every 10 seconds and connects by itself.' };
-  const show = s => { st.textContent = (LABEL[s.status] || s.status).replace('{user}', s.username || 'your account') + (s.status === 'offline' && s.detail ? ' (' + s.detail.slice(0, 120) + ')' : ''); };
+  const show = s => { st.textContent = (LABEL[s.status] || s.status).replace('{user}', s.username || 'your account') + ((s.status === 'offline' || s.status === 'connecting' || s.status === 'notlive') && s.detail ? ' (' + s.detail.slice(0, 120) + ')' : ''); };
   window.desktop.onStatus(show);
   window.desktop.onTogglePanel(() => $('#sim').classList.toggle('open'));
   window.desktop.onShowHelp(() => { $('#sim').classList.add('open'); st.textContent = 'Start your LIVE in TikTok LIVE Studio, type your username here, press Go live, then add this window as a Window Capture source.'; });

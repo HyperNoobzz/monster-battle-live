@@ -24,6 +24,7 @@ function userOf(d) {
 function createBridge({ port = 8080, log = console.log, onStatus = () => {} } = {}) {
   const wss = new WebSocketServer({ port, host: '127.0.0.1' });
   let status = 'idle', username = '', conn = null, retryTimer = null, retryDelay = 5000, stopped = true;
+  let attempt = 0;
   let skipLiveCheck = false; // alternate attempts skip TikTok's "is live" check, which can wrongly say offline
   let giftList = null; // [{ name, coins, image }] from TikTok, sent to the game for the gift guide
 
@@ -78,17 +79,28 @@ function createBridge({ port = 8080, log = console.log, onStatus = () => {} } = 
   }
   function tryConnect() {
     if (stopped) return;
+    attempt++;
     log(`[tiktok] connecting to @${username}${skipLiveCheck ? ' (skipping live check)' : ''} ...`);
-    setStatus('connecting');
-    conn.connect()
-      .then(state => { retryDelay = 5000; log(`[tiktok] connected, roomId ${state.roomId}`); setStatus('live'); loadGiftList(); })
+    setStatus('connecting', `attempt ${attempt}${skipLiveCheck ? ', direct to live room' : ''}`);
+    // Never wait forever on one attempt: give up after 25s and try again.
+    const c = conn;
+    let timer;
+    const timeout = new Promise((_, reject) => { timer = setTimeout(() => {
+      const e = new Error('TikTok did not answer within 25 seconds'); e.timedOut = true; reject(e);
+    }, 25000); });
+    Promise.race([c.connect(), timeout])
+      .finally(() => clearTimeout(timer))
+      .then(state => {
+        if (c !== conn || stopped) return; retryDelay = 5000; log(`[tiktok] connected, roomId ${state.roomId}`); setStatus('live'); loadGiftList(); })
       .catch(err => {
+        if (c !== conn || stopped) return;
         const msg = err && err.message ? err.message : String(err);
         log('[tiktok] connect failed: ' + msg);
         // Not live yet is the usual case before a stream starts: keep checking every 10s
         // instead of backing off, so the game connects soon after the LIVE begins.
         const notLive = /isn't online|not online|offline/i.test(msg) || (err && err.name === 'UserOfflineError');
         if (notLive){ skipLiveCheck = !skipLiveCheck; makeConn(); retryDelay = skipLiveCheck ? 1000 : 10000; }
+        else if (err && err.timedOut) makeConn(); // drop the stuck attempt; a late answer from it is ignored
         setStatus(notLive ? 'notlive' : 'offline', msg);
         scheduleRetry();
         if (notLive) retryDelay = 10000;
@@ -117,7 +129,7 @@ function createBridge({ port = 8080, log = console.log, onStatus = () => {} } = 
     disconnect();
     username = String(name || '').trim().replace(/^.*tiktok\.com\/@?/, '').replace(/^@/, '').replace(/\/.*$/, '');
     if (!username) return;
-    stopped = false; retryDelay = 5000;
+    stopped = false; retryDelay = 5000; attempt = 0;
     setStatus('connecting');
     const want = username;
     loadLib().then(() => {
