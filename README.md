@@ -24,6 +24,15 @@ RED is a cartoon **#7** striker (red shirt, green shorts) named RONALDO, and BLU
 Both are original chibi drawings made in code: no photos, club crests or brand logos. Attacks are kicked footballs.
 Both names can be changed in the ⚙ panel (*RED player name* / *BLUE player name*). Viewers can also join by commenting `ronaldo`/`cr7` or `messi`/`lm10`.
 
+## Screen layout
+The 9:16 screen is laid out for TikTok's phone view, where TikTok draws its own UI over the stream:
+- **Top 110px** (TikTok's host name and viewer count): logo and connection status only.
+- **Middle:** scoreboard, battle message and the pitch with both players and their HP boxes (each shows the team's top damage dealer this round).
+- **Bottom-right:** *How to play* and the *Gifts* guide (gift picture, coins, effect, damage).
+- **Bottom-left:** left calm on purpose, because TikTok's comments appear there.
+
+To check the layout, tick **Show TikTok screen zones (setup only)** in the ⚙ panel. It marks the areas TikTok covers. Untick it before going live.
+
 ## How viewers play
 Nothing on screen mentions gifts. Everything shown to viewers is comment-, like- and share-based.
 

@@ -19,44 +19,56 @@ body.transparent{background:transparent}
 #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
 #stage{position:relative;width:540px;height:960px;transform-origin:center center;overflow:hidden;
   background:linear-gradient(#1a1f3a,#10132a);box-shadow:0 0 60px #000a}
-/* ---------- header ---------- */
-#header{position:absolute;left:0;right:0;top:0;height:92px;padding:12px 16px;
-  background:linear-gradient(90deg,var(--red-dark),#2a1840 50%,var(--blue-dark));color:#fff}
-#title{font-family:var(--pixel);font-size:17px;text-align:center;letter-spacing:1px;text-shadow:3px 3px 0 #0008}
-#score{display:flex;justify-content:center;align-items:center;gap:14px;margin-top:12px;font-family:var(--pixel);font-size:14px}
-#score .r{color:#ffb3bb}#score .b{color:#b3d4ff}
-#score .num{font-size:22px;color:#fff}
-#roundTag{position:absolute;left:12px;top:56px;font-family:var(--pixel);font-size:9px;opacity:.85}
-#conn{position:absolute;right:12px;top:56px;font-family:var(--pixel);font-size:9px;display:flex;gap:6px;align-items:center}
-#conn i{width:9px;height:9px;border-radius:50%;background:#888;display:inline-block}
+/* ---------- portrait layout, TikTok-safe ----------
+   On viewers' phones TikTok covers the top ~110px (host name, viewers), the lower-left
+   (comments) and the bottom bar. Everything important sits between y 110 and 566,
+   or in the right-hand column below it; the lower-left stays calm so comments read well. */
+#stage{background:
+  radial-gradient(ellipse 45% 16% at 12% 0%, #fff6c850 0%, transparent 70%),
+  radial-gradient(ellipse 45% 16% at 88% 0%, #fff6c850 0%, transparent 70%),
+  radial-gradient(circle at 3px 3px, #ffffff1a 1.5px, transparent 2px) 0 0/12px 10px,
+  linear-gradient(#0d1230 0%, #1d2555 11%, #121736 62%, #090c1e 100%)}
+#topband{position:absolute;left:0;right:0;top:0;height:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;color:#fff}
+#title{font-family:var(--pixel);font-size:19px;letter-spacing:2px;text-shadow:0 0 14px #ffcf3a99,3px 3px 0 #000a}
+#title .ball{display:inline-block;animation:spin 5s linear infinite}
+#conn{font-family:var(--pixel);font-size:8px;display:flex;gap:6px;align-items:center;opacity:.75}
+#conn i{width:8px;height:8px;border-radius:50%;background:#888;display:inline-block}
 #conn.live i{background:#ff2d55;box-shadow:0 0 8px #ff2d55;animation:pulse 1.2s infinite}
 #conn.sim i{background:#ffcf3a}
 @keyframes pulse{50%{opacity:.35}}
-/* ---------- join bar ---------- */
-#joinbar{position:absolute;top:92px;left:0;right:0;height:50px;display:flex}
-#joinbar div{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;color:#fff;font-weight:900;font-size:17px}
-#joinbar .jr{background:var(--red)}#joinbar .jb{background:var(--blue)}
-#joinbar kbd{font-family:var(--pixel);font-size:15px;background:#fff;color:var(--ink);border-radius:6px;padding:5px 8px;box-shadow:0 3px 0 #0005}
+#scoreboard{position:absolute;left:50%;top:113px;transform:translateX(-50%);display:flex;height:44px;filter:drop-shadow(0 5px 10px #000a)}
+#scoreboard .sb{display:flex;align-items:center;gap:10px;color:#fff;font-family:var(--pixel);font-size:11px;white-space:nowrap}
+#scoreboard .sb.r{background:linear-gradient(90deg,var(--red-dark),var(--red));padding:0 26px 0 18px;clip-path:polygon(16px 0,100% 0,calc(100% - 16px) 100%,0 100%)}
+#scoreboard .sb.b{background:linear-gradient(90deg,var(--blue),var(--blue-dark));padding:0 18px 0 26px;clip-path:polygon(16px 0,100% 0,calc(100% - 16px) 100%,0 100%)}
+#scoreboard .sb.mid{background:#0b0e26;color:var(--gold);font-size:8px;padding:0 24px;margin:0 -14px;clip-path:polygon(16px 0,100% 0,calc(100% - 16px) 100%,0 100%);z-index:1}
+#scoreboard b{font-family:var(--sans);font-weight:900;font-size:22px;line-height:1;background:#fff;color:var(--ink);padding:5px 8px 4px;border-radius:4px;min-width:34px;text-align:center}
+#frame{position:absolute;inset:0;pointer-events:none;z-index:5;box-shadow:inset 0 0 0 2px #ffffff18,inset 0 0 70px #000a}
+#frame::before,#frame::after{content:"";position:absolute;top:110px;bottom:0;width:4px}
+#frame::before{left:0;background:linear-gradient(var(--red),transparent 75%)}
+#frame::after{right:0;background:linear-gradient(var(--blue),transparent 75%)}
+#msgbar{position:absolute;left:10px;right:10px;top:164px;height:58px;background:var(--paper);border:3px solid var(--ink);border-radius:10px;
+  box-shadow:inset 0 0 0 3px #c9c2a6,0 5px 14px #0008;padding:4px 28px 4px 14px;display:flex;align-items:center;font-weight:900;font-size:16px;line-height:1.25;z-index:2}
+#msgbar .arrow{position:absolute;right:10px;bottom:5px;font-size:10px;animation:pulse 1s infinite}
 /* ---------- field ---------- */
-#field{position:absolute;top:142px;left:0;width:540px;height:478px;overflow:hidden;
+#field{position:absolute;top:226px;left:0;width:540px;height:340px;overflow:hidden;border-top:2px solid #ffffff30;border-bottom:2px solid #ffffff30;
   background:
    radial-gradient(ellipse 30% 22% at 12% 0%, #fffbe0cc 0%, transparent 70%),
    radial-gradient(ellipse 30% 22% at 88% 0%, #fffbe0cc 0%, transparent 70%),
-   radial-gradient(ellipse 132px 48px at 50% 66%, transparent 94%, #ffffff66 95%, #ffffff66 99%, transparent 100%),
+   radial-gradient(ellipse 132px 40px at 50% 70%, transparent 94%, #ffffff66 95%, #ffffff66 99%, transparent 100%),
    radial-gradient(circle at 3px 3px, #ffffff22 1.6px, transparent 2.2px) 0 0/12px 10px,
-   linear-gradient(#141a3a 0%,#2a3466 38%,#3a4a7a 40%,#3a4a7a 41%, transparent 41%),
+   linear-gradient(#141a3a 0%,#2a3466 30%,#3a4a7a 32%,#3a4a7a 33%, transparent 33%),
    repeating-linear-gradient(90deg,#3fa34a 0 54px,#379441 54px 108px)}
-#field::before{content:"";position:absolute;left:0;right:0;top:41%;height:4px;background:#ffffffaa}
+#field::before{content:"";position:absolute;left:0;right:0;top:33%;height:4px;background:#ffffffaa}
 
 .platform{position:absolute;border-radius:50%;background:radial-gradient(ellipse at center,#00000040 0%,#00000022 55%,transparent 72%);z-index:0}
-#platB{left:290px;top:208px;width:220px;height:54px}
-#platR{left:20px;top:410px;width:280px;height:66px}
+#platB{left:326px;top:128px;width:176px;height:40px}
+#platR{left:18px;top:290px;width:254px;height:56px}
 .mon{position:absolute;transition:filter .2s}
 .mon svg{width:100%;height:100%;overflow:visible}
 .mon .bob{width:100%;height:100%;animation:bob 2.4s ease-in-out infinite}
 @keyframes bob{50%{transform:translateY(-6px) scaleY(1.02)}}
-#monB{left:310px;top:44px;width:180px;height:190px}
-#monR{left:44px;top:212px;width:230px;height:230px}
+#monB{left:338px;top:2px;width:152px;height:158px}
+#monR{left:40px;top:126px;width:206px;height:206px}
 #monR .bob{animation-delay:-1.2s}
 .mon.hit{animation:shake .4s}
 .mon.flash{filter:brightness(3) saturate(0)}
@@ -68,26 +80,28 @@ body.transparent{background:transparent}
 @keyframes lungeR{50%{transform:translate(36px,-24px)}}
 @keyframes lungeB{50%{transform:translate(-36px,24px)}}
 /* HP boxes */
-.hpbox{position:absolute;width:250px;background:var(--paper);border:4px solid var(--ink);border-radius:12px 4px 12px 4px;padding:8px 10px 8px;box-shadow:5px 5px 0 #0004}
-#hpB{left:16px;top:22px}
-#hpR{left:274px;top:300px}
+.hpbox{position:absolute;width:226px;background:var(--paper);border:3px solid var(--ink);border-radius:12px 4px 12px 4px;padding:13px 9px 6px;box-shadow:4px 4px 0 #0005;z-index:1}
+#hpB{left:12px;top:14px}
+#hpR{left:302px;top:208px}
 .hpbox .team{position:absolute;top:-14px;left:10px;font-family:var(--pixel);font-size:9px;color:#fff;padding:4px 7px;border-radius:4px;border:2px solid var(--ink)}
 #hpR .team{background:var(--red)}#hpB .team{background:var(--blue)}
 .hpbox .row1{display:flex;justify-content:space-between;align-items:baseline;gap:6px}
-.hpbox .name{font-family:var(--pixel);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hpbox .name{font-family:var(--pixel);font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hpbox .lv{font-family:var(--pixel);font-size:10px;white-space:nowrap}
-.hpbox .row2{display:flex;align-items:center;gap:6px;margin-top:7px}
+.hpbox .row2{display:flex;align-items:center;gap:6px;margin-top:5px}
 .hpbox .hplabel{font-family:var(--pixel);font-size:8px;color:var(--gold);background:#4a3c1e;padding:2px 4px;border-radius:3px}
 .hpbar{flex:1;height:11px;background:#4b4f5e;border:2px solid var(--ink);border-radius:6px;overflow:hidden}
 .hpbar div{height:100%;width:100%;background:var(--hp-green);transition:width .5s ease-out,background .3s}
-.hpbox .row3{display:flex;justify-content:space-between;margin-top:6px;font-weight:900;font-size:13px}
+.hpbox .row3{display:flex;justify-content:space-between;align-items:center;margin-top:4px;font-weight:900;font-size:12px}
 .type{font-family:var(--pixel);font-size:8px;color:#fff;padding:3px 6px;border-radius:4px;text-shadow:1px 1px 0 #0006}
-.hpbox .meta{font-size:12px;font-weight:800;color:#555;margin-top:4px;display:flex;justify-content:space-between}
+.hpbox .meta{font-size:11px;font-weight:800;color:#555;margin-top:3px;display:flex;justify-content:space-between}
 .bars{display:flex;gap:6px;margin-top:3px}
 .likebar,.powbar{flex:1;height:5px;background:#ddd;border-radius:3px;overflow:hidden}
 .likebar div,.powbar div{height:100%;width:0;background:#ff4f8b;transition:width .3s}
 .powbar div{background:#f0a400}
 .hpbox .sh{color:#1683c4}
+.hpbox .mvp{margin-top:3px;font-size:11px;font-weight:900;color:#7a5a00;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hpbox .mvp.none{color:#999;font-weight:800}
 .mon.shielded::after{content:"";position:absolute;left:-4%;right:-4%;top:-2%;bottom:-6%;border-radius:50%;border:4px solid #7fd8ffb0;background:radial-gradient(circle,#7fd8ff00 55%,#7fd8ff40);animation:pulse 1.6s infinite;pointer-events:none}
 .dmg.shield{color:#7fd8ff}
 /* fx */
@@ -105,55 +119,48 @@ body.transparent{background:transparent}
 #stage.quake{animation:quake .5s}
 @keyframes quake{20%{transform:var(--scale) translate(-8px,6px)}40%{transform:var(--scale) translate(8px,-6px)}60%{transform:var(--scale) translate(-6px,-4px)}80%{transform:var(--scale) translate(4px,4px)}}
 /* toast feed */
-#toasts{position:absolute;left:16px;top:172px;width:280px;display:flex;flex-direction:column;align-items:flex-start;gap:4px;pointer-events:none}
-.toast{font-weight:900;font-size:14px;color:#fff;padding:4px 12px;border-radius:20px;background:#0009;animation:toast 2.6s forwards;white-space:nowrap;max-width:280px;overflow:hidden;text-overflow:ellipsis}
+#toasts{position:absolute;left:252px;right:10px;top:164px;display:flex;flex-direction:column;align-items:flex-end;gap:3px;pointer-events:none;z-index:2}
+.toast{font-weight:900;font-size:12px;color:#fff;padding:2px 10px;border-radius:20px;background:#000a;animation:toast 2.6s forwards;white-space:nowrap;max-width:276px;overflow:hidden;text-overflow:ellipsis}
 .toast.r{background:#c81e3ccc}.toast.b{background:#1a5fc8cc}
 @keyframes toast{0%{opacity:0;transform:translateY(8px)}10%,80%{opacity:1;transform:none}100%{opacity:0}}
 /* speed tag */
-#speed{position:absolute;right:10px;bottom:8px;font-family:var(--pixel);font-size:10px;color:#fff;background:#000a;padding:5px 8px;border-radius:6px;display:none}
+#speed{position:absolute;left:10px;bottom:8px;z-index:2;font-family:var(--pixel);font-size:10px;color:#fff;background:#000a;padding:5px 8px;border-radius:6px;display:none}
 /* banner */
-#banner{position:absolute;left:0;right:0;top:150px;text-align:center;color:#fff;pointer-events:none;opacity:0;transform:scale(.6);transition:all .35s cubic-bezier(.2,1.5,.5,1)}
+#banner{position:absolute;left:0;right:0;top:96px;z-index:3;text-align:center;color:#fff;pointer-events:none;opacity:0;transform:scale(.6);transition:all .35s cubic-bezier(.2,1.5,.5,1)}
 #banner.show{opacity:1;transform:none}
 #banner .big{font-family:var(--pixel);font-size:30px;text-shadow:4px 4px 0 var(--ink),-2px -2px 0 var(--ink),2px -2px 0 var(--ink),-2px 2px 0 var(--ink)}
 #banner .sub{display:inline-block;margin-top:12px;font-weight:900;font-size:19px;background:#000b;padding:8px 16px;border-radius:10px}
-/* ---------- textbox ---------- */
-#textbox{position:absolute;top:620px;left:0;right:0;height:104px;background:#2c3350;padding:8px}
-#textbox .inner{height:100%;background:var(--paper);border:4px solid var(--ink);border-radius:10px;box-shadow:inset 0 0 0 4px #c9c2a6;padding:12px 16px;
-  font-weight:900;font-size:19px;line-height:1.3;display:flex;align-items:center;position:relative}
+/* ---------- message ---------- */
 #msg{transition:opacity .15s}
+#msg img{width:22px;height:22px;object-fit:contain;vertical-align:-5px}
 #msg .hl{color:#c4162f}#msg .hb{color:#1452b8}#msg .gold{color:#b07800}
-#textbox .arrow{position:absolute;right:14px;bottom:8px;font-size:12px;animation:pulse 1s infinite}
-/* ---------- bottom panel ---------- */
-#panel{position:absolute;top:724px;left:0;right:0;bottom:0;background:#141831;color:#fff;padding:10px 12px}
-#gifts,#giftGuide{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-#gifts .gcard,#giftGuide .gcard{height:104px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:0}
-#giftGuide .gcard>*{flex-shrink:0}
-#giftGuide .gi{height:36px;font-size:29px;line-height:36px}
-#giftGuide .gi img{width:36px;height:36px;object-fit:contain;display:block}
-#giftGuide .gn{font-weight:900;font-size:12.5px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#giftGuide .gc{font-family:var(--pixel);font-size:10px;color:var(--gold);margin:2px 0 1px}
-#giftGuide .d{font-size:10.5px;line-height:1.15}
-#msg img{width:28px;height:28px;object-fit:contain;vertical-align:-7px}
+/* ---------- right column (free of TikTok comments) ---------- */
+#side{position:absolute;left:360px;right:8px;top:576px;display:flex;flex-direction:column;gap:6px;z-index:2}
+.card{background:#0d1028d9;border:1px solid #ffffff26;border-radius:10px;padding:7px 8px;color:#fff;box-shadow:0 6px 16px #0008}
+.card h5{font-family:var(--pixel);font-size:7px;color:var(--gold);letter-spacing:1px;margin-bottom:5px}
+.hrow{display:flex;align-items:center;gap:5px;font-weight:800;font-size:12px;line-height:19px;white-space:nowrap}
+.hrow kbd{font-family:var(--pixel);font-size:9px;background:#fff;color:var(--ink);border-radius:4px;padding:3px 4px 2px;min-width:17px;text-align:center}
+.hrow kbd.kr{background:var(--red);color:#fff}.hrow kbd.kb{background:var(--blue);color:#fff}
+.hrow.cmds{gap:3px}.hrow.cmds kbd{margin-left:3px}.hrow.cmds kbd:first-child{margin-left:0}
+.hrow .tl-R{color:#ff8a98}.hrow .tl-B{color:#8cc0ff}
+.grow{display:flex;align-items:center;gap:6px;height:34px}
+.grow .gi{width:30px;height:30px;flex:none;font-size:22px;display:flex;align-items:center;justify-content:center}
+.grow .gi img{width:30px;height:30px;object-fit:contain;display:block}
+.grow .gt{min-width:0;flex:1}
+.grow .gn{display:flex;justify-content:space-between;gap:4px;font-weight:900;font-size:12px}
+.grow .gn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.grow .gn b{color:var(--gold);font-size:11px;white-space:nowrap}
+.grow .ge{font-size:10px;font-weight:800;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.grow.t3 .ge{color:#ffa6e6;opacity:1}
+/* setup helper: where TikTok's own UI covers the stream on phones */
+#zones{position:absolute;inset:0;pointer-events:none;z-index:6}
+#zones div{position:absolute;display:flex;align-items:center;justify-content:center;font-family:var(--pixel);font-size:8px;color:#fff;text-shadow:1px 1px 0 #000;
+  background:repeating-linear-gradient(45deg,#ff2d5544 0 10px,#ff2d5522 10px 20px);border:2px dashed #ff2d55aa}
 .giftpop{position:absolute;font-size:54px;line-height:1;animation:giftpop 1.3s ease-out forwards;pointer-events:none}
 .giftpop img{width:72px;height:72px;object-fit:contain;display:block}
 @keyframes giftpop{0%{transform:translate(-50%,-50%) scale(.3);opacity:0}18%{transform:translate(-50%,-50%) scale(1.25);opacity:1}75%{transform:translate(-50%,-60%) scale(1);opacity:1}100%{transform:translate(-50%,-110%) scale(.9);opacity:0}}
 .dmg.star{color:#ffe14a;font-size:26px}
 .star-ring{position:absolute;border-radius:50%;transform:translate(-50%,-50%);border:6px solid #ffe14a;animation:burst .7s ease-out forwards}
-.gcard{background:#232a4d;border-radius:8px;padding:6px 4px;text-align:center;border-bottom:3px solid #0006}
-.gcard .c{font-family:var(--pixel);font-size:17px;color:var(--gold)}
-.gcard .n{font-weight:900;font-size:13px;margin-top:4px}
-.gcard .d{font-size:11px;opacity:.75;font-weight:800}
-.gcard.t3{background:linear-gradient(135deg,#5b2a8a,#a33a7a)}
-#boards{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
-.board{border-radius:8px;padding:6px 8px;min-height:84px}
-.board.r{background:#4a1525}.board.b{background:#132a55}
-.board h4{font-family:var(--pixel);font-size:8px;opacity:.85;margin-bottom:5px}
-.board ol{list-style:none;font-weight:800;font-size:13px}
-.board li{display:flex;justify-content:space-between;gap:6px;padding:1px 0}
-.board li span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.board li .medal{margin-right:3px}
-.board .empty{opacity:.5;font-size:12px}
-#hints{display:flex;justify-content:space-around;margin-top:7px;font-weight:900;font-size:12.5px;opacity:.9}
 /* ---------- simulator ---------- */
 #gear{position:fixed;right:12px;bottom:12px;z-index:20;width:44px;height:44px;border-radius:50%;border:0;background:#fff2;color:#fff;font-size:22px;cursor:pointer;backdrop-filter:blur(4px);opacity:.35}
 #gear:hover{background:#fff4;opacity:1}
@@ -179,16 +186,16 @@ body.clean #gear{display:none}
 <body>
 <div id="wrap">
 <div id="stage">
-  <div id="header">
-    <div id="title">⚽ GOAT BATTLE ⚽</div>
-    <div id="score"><span class="r tl-R">RED</span><span class="num" id="scoreR">0</span><span>–</span><span class="num" id="scoreB">0</span><span class="b tl-B">BLUE</span></div>
-    <div id="roundTag">ROUND 1</div>
+  <div id="topband">
+    <div id="title"><span class="ball">⚽</span> GOAT BATTLE <span class="ball">⚽</span></div>
     <div id="conn" class="sim"><i></i><span id="connText">SIMULATOR</span></div>
   </div>
-  <div id="joinbar">
-    <div class="jr">Comment <kbd>1</kbd> <span class="tl-R">RED</span></div>
-    <div class="jb">Comment <kbd>2</kbd> <span class="tl-B">BLUE</span></div>
+  <div id="scoreboard">
+    <div class="sb r"><span class="tl-R">RED</span><b id="scoreR">0</b></div>
+    <div class="sb mid" id="roundTag">ROUND 1</div>
+    <div class="sb b"><b id="scoreB">0</b><span class="tl-B">BLUE</span></div>
   </div>
+  <div id="msgbar"><div id="msg">Loading…</div><span class="arrow">▼</span></div>
 
   <div id="field">
     <div class="platform" id="platB"></div>
@@ -203,6 +210,7 @@ body.clean #gear{display:none}
       <div class="row3"><span class="type">—</span><span class="hpnum">0/0</span></div>
       <div class="meta"><span class="lk">❤ 0/100</span><span class="sh"></span><span class="pw">⚡ 0/30</span></div>
       <div class="bars"><div class="likebar"><div></div></div><div class="powbar"><div></div></div></div>
+      <div class="mvp none">No hits yet</div>
     </div>
     <div class="hpbox" id="hpR">
       <div class="team"><span class="tl-R">RED</span> · <span class="cnt">0</span> fans</div>
@@ -211,6 +219,7 @@ body.clean #gear{display:none}
       <div class="row3"><span class="type">—</span><span class="hpnum">0/0</span></div>
       <div class="meta"><span class="lk">❤ 0/100</span><span class="sh"></span><span class="pw">⚡ 0/30</span></div>
       <div class="bars"><div class="likebar"><div></div></div><div class="powbar"><div></div></div></div>
+      <div class="mvp none">No hits yet</div>
     </div>
 
     <div id="fx"></div>
@@ -220,21 +229,23 @@ body.clean #gear{display:none}
     <div id="flash"></div>
   </div>
 
-  <div id="textbox"><div class="inner"><div id="msg">Loading…</div><span class="arrow">▼</span></div></div>
-
-  <div id="panel">
-    <div id="gifts">
-      <div class="gcard"><div class="c">A</div><div class="n">Attack</div><div class="d">hit the enemy</div></div>
-      <div class="gcard"><div class="c">D</div><div class="n">Defend</div><div class="d">add a shield</div></div>
-      <div class="gcard"><div class="c">H</div><div class="n">Heal</div><div class="d">restore HP</div></div>
-      <div class="gcard t3"><div class="c">⚡</div><div class="n">POWER</div><div class="d" id="powHint">every 30 commands</div></div>
+  <div id="side">
+    <div class="card" id="howto">
+      <h5>HOW TO PLAY</h5>
+      <div class="hrow"><kbd class="kr">1</kbd>join <span class="tl-R">RED</span></div>
+      <div class="hrow"><kbd class="kb">2</kbd>join <span class="tl-B">BLUE</span></div>
+      <div class="hrow cmds"><kbd>A</kbd>hit<kbd>D</kbd>shield<kbd>H</kbd>heal</div>
+      <div class="hrow" id="powHint">⚡ 30 commands = POWER</div>
+      <div class="hrow" id="likeHint">❤ 100 likes = free hit</div>
+      <div class="hrow">🔁 Share = heal</div>
     </div>
-    <div id="giftGuide" hidden></div>
-    <div id="boards">
-      <div class="board r"><h4><span class="tl-R">RED</span> TOP FANS</h4><ol id="topR"></ol></div>
-      <div class="board b"><h4><span class="tl-B">BLUE</span> TOP FANS</h4><ol id="topB"></ol></div>
-    </div>
-    <div id="hints"><span>💬 Comment A · D · H</span><span id="likeHint">❤ 100 likes = free hit</span><span>🔁 Share = heal</span></div>
+    <div class="card" id="giftGuide"></div>
+  </div>
+  <div id="frame"></div>
+  <div id="zones" hidden>
+    <div style="left:0;right:0;top:0;height:110px">TIKTOK HEADER</div>
+    <div style="left:0;width:356px;top:590px;height:310px">TIKTOK COMMENTS</div>
+    <div style="left:0;right:0;top:900px;height:60px">TIKTOK BUTTONS</div>
   </div>
 </div>
 </div>
@@ -294,6 +305,7 @@ body.clean #gear{display:none}
   <label for="setNameR">RED player name <input id="setNameR" maxlength="12"></label>
   <label for="setNameB">BLUE player name <input id="setNameB" maxlength="12"></label>
   <label>Show gift guide on screen <input id="setGuide" type="checkbox"></label>
+  <label for="setZones">Show TikTok screen zones (setup only) <input id="setZones" type="checkbox"></label>
   <label>Sound effects <input id="setSound" type="checkbox"></label>
   <div class="btns" style="margin-top:6px"><button id="resetBtn">Reset scores</button><button id="skipBtn">Skip round</button></div>
   <div class="note">Press <b>S</b> to toggle this panel. Add <b>?clean</b> to the URL to hide the ⚙ button for OBS. Add <b>?ws=ws://host:port</b> to pick a bridge.</div>
@@ -512,8 +524,8 @@ function makeMonster(seed, type, level){
 
 /* ================= game state ================= */
 const teams = {
-  R: { key:'R', label:settings.nameR, score:0, members:new Set(), likes:0, power:0, shield:0, mon:null, dmg:new Map(), el:{ mon:$('#monR'), hp:$('#hpR'), top:$('#topR') } },
-  B: { key:'B', label:settings.nameB, score:0, members:new Set(), likes:0, power:0, shield:0, mon:null, dmg:new Map(), el:{ mon:$('#monB'), hp:$('#hpB'), top:$('#topB') } },
+  R: { key:'R', label:settings.nameR, score:0, members:new Set(), likes:0, power:0, shield:0, mon:null, dmg:new Map(), el:{ mon:$('#monR'), hp:$('#hpR') } },
+  B: { key:'B', label:settings.nameB, score:0, members:new Set(), likes:0, power:0, shield:0, mon:null, dmg:new Map(), el:{ mon:$('#monB'), hp:$('#hpB') } },
 };
 const saved = store.get('scores', { R:0, B:0, round:1 });
 teams.R.score = saved.R; teams.B.score = saved.B;
@@ -554,16 +566,16 @@ function renderTeamMeta(team){
   team.el.hp.querySelector('.pw').textContent = `⚡ ${team.power}/${settings.powerGoal}`;
   team.el.hp.querySelector('.likebar div').style.width = Math.min(100, team.likes / settings.likesPerAttack * 100) + '%';
   team.el.hp.querySelector('.powbar div').style.width = Math.min(100, team.power / settings.powerGoal * 100) + '%';
-  $('#powHint').textContent = `every ${settings.powerGoal} commands`;
+  $('#powHint').textContent = `⚡ ${settings.powerGoal} commands = POWER`;
   $('#likeHint').textContent = `❤ ${settings.likesPerAttack} likes = free hit`;
 }
 function renderBoards(){
+  // Each team's top damage dealer this round, shown in its HP box.
   for (const team of Object.values(teams)){
-    const list = [...team.dmg.entries()].sort((a, b) => b[1].dmg - a[1].dmg).slice(0, 3);
-    const medals = ['🥇','🥈','🥉'];
-    team.el.top.innerHTML = list.length
-      ? list.map(([, v], i) => `<li><span><span class="medal">${medals[i]}</span>${esc(v.nickname)}</span><span>${fmt(v.dmg)}</span></li>`).join('')
-      : `<li class="empty">No damage yet — comment A!</li>`;
+    const top = [...team.dmg.values()].sort((a, b) => b.dmg - a.dmg)[0];
+    const el = team.el.hp.querySelector('.mvp');
+    el.classList.toggle('none', !top);
+    el.textContent = top ? `👑 ${short(top.nickname)} · ${fmt(top.dmg)} dmg` : 'No hits yet — comment A!';
   }
 }
 function renderScore(){
@@ -584,7 +596,7 @@ function toast(text, cls){
   const box = $('#toasts');
   const t = document.createElement('div'); t.className = 'toast ' + (cls || ''); t.textContent = text;
   box.appendChild(t);
-  while (box.children.length > 3) box.firstChild.remove();
+  while (box.children.length > 2) box.firstChild.remove();
   setTimeout(() => t.remove(), 2700);
 }
 
@@ -724,11 +736,11 @@ function pickTierGift(t){
   return withPic || { name:t.def[0], coins:t.def[1] };
 }
 function renderGiftGuide(){
-  $('#giftGuide').innerHTML = GIFT_TIERS.map((t, i) => {
+  $('#giftGuide').innerHTML = '<h5>GIFTS</h5>' + GIFT_TIERS.map((t, i) => {
     const g = pickTierGift(t);
-    return `<div class="gcard${i === 3 ? ' t3' : ''}"><div class="gi">${giftIcon(g.name, g.coins)}</div>
-      <div class="gn">${esc(g.name)}</div><div class="gc">${fmt(g.coins)} 🪙</div>
-      <div class="d">${t.effect}<br>~${fmt(g.coins * settings.dmgPerCoin)} dmg</div></div>`;
+    return `<div class="grow${i === 3 ? ' t3' : ''}"><div class="gi">${giftIcon(g.name, g.coins)}</div>
+      <div class="gt"><div class="gn"><span>${esc(g.name)}</span><b>${fmt(g.coins)} 🪙</b></div>
+      <div class="ge">${t.effect} · ~${fmt(g.coins * settings.dmgPerCoin)} dmg</div></div></div>`;
   }).join('');
 }
 function setGiftCatalog(list){
@@ -772,7 +784,7 @@ async function doAttack(a){
     const total = a.coins * a.repeat;
     const gname = giftIcon(a.giftName, a.coins) + ' ' + esc(a.giftName || 'Gift') + (a.repeat > 1 ? ` ×${a.repeat}` : '');
     const from0 = center(att.el.mon);
-    const pop = addFx('giftpop', from0.x, from0.y - (a.team === 'R' ? 135 : 105), null, giftIcon(a.giftName, a.coins)); setTimeout(() => pop.remove(), 1400);
+    const pop = addFx('giftpop', from0.x + (a.team === 'R' ? 0 : -118), from0.y + (a.team === 'R' ? -112 : 12), null, giftIcon(a.giftName, a.coins)); setTimeout(() => pop.remove(), 1400);
     say(`${who} · ${gname} <span class="gold">(${fmt(total)} 🪙)</span><br>${teamSpan(a.team, am.name)} used <b>${move.toUpperCase()}</b>!`);
   } else say(`${who}: ${teamSpan(a.team, am.name)} used <b>${move.toUpperCase()}</b>!${xs}`);
   await wait(450);
@@ -1119,14 +1131,12 @@ nameRIn.onchange = () => { settings.nameR = nameRIn.value.trim().toUpperCase().s
 nameBIn.onchange = () => { settings.nameB = nameBIn.value.trim().toUpperCase().slice(0, 12) || 'BLUE'; nameBIn.value = settings.nameB; saveSettings(); applyNames(); };
 const guideIn = $('#setGuide');
 guideIn.checked = settings.showGiftGuide;
-guideIn.onchange = () => { settings.showGiftGuide = guideIn.checked; saveSettings(); showGuide(false); };
-// When enabled, the bottom cards alternate between comment commands and the gift guide.
-let guideFlip = false;
-function showGuide(flip){
-  guideFlip = settings.showGiftGuide && flip;
-  $('#gifts').hidden = guideFlip; $('#giftGuide').hidden = !guideFlip;
-}
-setInterval(() => showGuide(!guideFlip), 8000);
+guideIn.onchange = () => { settings.showGiftGuide = guideIn.checked; saveSettings(); showGuide(); };
+function showGuide(){ $('#giftGuide').hidden = !settings.showGiftGuide; }
+showGuide();
+const zonesIn = $('#setZones');
+zonesIn.checked = false;
+zonesIn.onchange = () => { $('#zones').hidden = !zonesIn.checked; };
 const powIn = $('#setPow'), cdIn = $('#setCd');
 powIn.value = settings.powerGoal; cdIn.value = settings.cmdCooldown;
 powIn.onchange = () => { settings.powerGoal = Math.max(5, +powIn.value || 30); saveSettings(); renderTeamMeta(teams.R); renderTeamMeta(teams.B); };
