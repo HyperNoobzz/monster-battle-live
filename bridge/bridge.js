@@ -77,8 +77,13 @@ function createBridge({ port = 8080, log = console.log, onStatus = () => {} } = 
       .catch(err => {
         const msg = err && err.message ? err.message : String(err);
         log('[tiktok] connect failed: ' + msg);
-        setStatus('offline', msg);
+        // Not live yet is the usual case before a stream starts: keep checking every 10s
+        // instead of backing off, so the game connects soon after the LIVE begins.
+        const notLive = /isn't online|not online|offline/i.test(msg) || (err && err.name === 'UserOfflineError');
+        if (notLive) retryDelay = 10000;
+        setStatus(notLive ? 'notlive' : 'offline', msg);
         scheduleRetry();
+        if (notLive) retryDelay = 10000;
       });
   }
 

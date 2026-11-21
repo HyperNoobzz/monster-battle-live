@@ -918,7 +918,7 @@ function handleEvent(e){
       break;
     }
     case 'status': {
-      const txt = { live:`LIVE @${e.username}`, connecting:'CONNECTING…', offline:'NOT LIVE', ended:'LIVE ENDED', idle:'SIMULATOR' }[e.status] || String(e.status).toUpperCase();
+      const txt = { live:`LIVE @${e.username}`, connecting:'CONNECTING…', offline:'NOT CONNECTED', notlive:'WAITING FOR LIVE', ended:'LIVE ENDED', idle:'SIMULATOR' }[e.status] || String(e.status).toUpperCase();
       setConn(e.status === 'live' ? 'live' : 'sim', txt);
       break;
     }
@@ -1156,8 +1156,9 @@ if (window.desktop){
   const userIn = $('#deskUser'), st = $('#deskStatus');
   userIn.value = store.get('tiktokUser', '');
   const LABEL = { idle:'Not connected.', connecting:'Connecting to TikTok…', live:'🔴 Connected! Viewers now control the battle.',
-                  offline:'Could not connect. Is your LIVE running? Retrying automatically…', ended:'Your LIVE has ended.' };
-  const show = s => { st.textContent = (LABEL[s.status] || s.status) + (s.status === 'offline' && s.detail ? ' (' + s.detail.slice(0, 120) + ')' : ''); };
+                  offline:'Could not connect. Retrying automatically…', ended:'Your LIVE has ended.',
+                  notlive:'⏳ @{user} is not live yet. Start your LIVE on TikTok; the game checks again every 10 seconds and connects by itself.' };
+  const show = s => { st.textContent = (LABEL[s.status] || s.status).replace('{user}', s.username || 'your account') + (s.status === 'offline' && s.detail ? ' (' + s.detail.slice(0, 120) + ')' : ''); };
   window.desktop.onStatus(show);
   window.desktop.onTogglePanel(() => $('#sim').classList.toggle('open'));
   window.desktop.onShowHelp(() => { $('#sim').classList.add('open'); st.textContent = 'Start your LIVE in TikTok LIVE Studio, type your username here, press Go live, then add this window as a Window Capture source.'; });
