@@ -1000,10 +1000,10 @@ function fromTikFinity(msg){
   const ev = String(msg.event || msg.type || '').toLowerCase();
   const d = msg.data || msg;
   const u = d.user || d;
-  const user = u.uniqueId || d.uniqueId || u.userId || d.userId || u.nickname || 'viewer';
+  const user = u.uniqueId || d.uniqueId || u.displayId || u.userId || d.userId || u.id || u.nickname || 'viewer';
   const nickname = u.nickname || d.nickname || user;
   const base = { user:String(user), nickname:String(nickname) };
-  if (ev === 'chat' || ev === 'comment') return { type:'comment', ...base, text:String(d.comment ?? d.text ?? '') };
+  if (ev === 'chat' || ev === 'comment') return { type:'comment', ...base, text:String(d.comment ?? d.content ?? d.text ?? '') };
   if (ev === 'gift'){
     const g = d.giftDetails || d.gift || {};
     const giftType = d.giftType ?? g.giftType ?? g.gift_type;
@@ -1012,7 +1012,7 @@ function fromTikFinity(msg){
              repeat:Number(d.repeatCount ?? 1) || 1, giftName:String(d.giftName ?? g.giftName ?? 'Gift'),
              image:String(d.giftPictureUrl ?? (g.giftImage && g.giftImage.url && g.giftImage.url[0]) ?? '') };
   }
-  if (ev === 'like') return { type:'like', ...base, count:Number(d.likeCount ?? 1) || 1 };
+  if (ev === 'like') return { type:'like', ...base, count:Number(d.likeCount ?? d.count ?? 1) || 1 };
   if (ev === 'share') return { type:'share', ...base };
   if (ev === 'follow') return { type:'follow', ...base };
   if (ev === 'social'){

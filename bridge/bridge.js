@@ -11,13 +11,16 @@ function loadLib() {
 }
 const { WebSocketServer } = require('ws');
 
+// The connector's event data follows TikTok's current schema (v3): the @handle is
+// user.displayId, chat text is `content`, gift details sit in `gift`, likes in `count`.
+// Older field names are still accepted as fallbacks.
+const firstUrl = img => { const l = img && (img.urlList || img.url_list || img.url || img.urls); return Array.isArray(l) ? l[0] || '' : ''; };
 function userOf(d) {
   const u = d.user || d;
-  const pic = u.profilePicture && (u.profilePicture.url || u.profilePicture.urls);
   return {
-    user: u.uniqueId || u.userId || 'unknown',
-    nickname: u.nickname || u.uniqueId || 'Viewer',
-    avatar: Array.isArray(pic) ? pic[0] : ''
+    user: String(u.uniqueId || u.displayId || u.id || u.userId || d.uniqueId || 'unknown'),
+    nickname: String(u.nickname || u.displayId || u.uniqueId || 'Viewer'),
+    avatar: firstUrl(u.avatarThumb) || firstUrl(u.profilePicture)
   };
 }
 
@@ -48,21 +51,23 @@ function createBridge({ port = 8080, log = console.log, onStatus = () => {} } = 
     const { WebcastEvent, ControlEvent } = lib;
     c.on(ControlEvent.DISCONNECTED, () => { if (c !== conn || stopped) return; log('[tiktok] disconnected, retrying ...'); setStatus('offline'); scheduleRetry(); });
     c.on(WebcastEvent.STREAM_END, () => { log('[tiktok] stream ended'); setStatus('ended'); });
-    c.on(WebcastEvent.CHAT, d => broadcast({ type: 'comment', ...userOf(d), text: d.comment || '' }));
+    c.on(WebcastEvent.CHAT, d => broadcast({ type: 'comment', ...userOf(d), text: String(d.content ?? d.comment ?? '') }));
     c.on(WebcastEvent.GIFT, d => {
-      const det = d.giftDetails || d.extendedGiftInfo || {};
-      const giftType = det.giftType != null ? det.giftType : d.giftType;
-      if (giftType === 1 && !d.repeatEnd) return; // count streak gifts once, when the streak ends
-      const coins = det.diamondCount || d.diamondCount || 1, repeat = d.repeatCount || 1;
-      const image = (det.giftImage && det.giftImage.url && det.giftImage.url[0]) || d.giftPictureUrl || '';
-      broadcast({ type: 'gift', ...userOf(d), giftName: det.giftName || 'Gift', coins, repeat, image });
-      log(`[gift] ${userOf(d).nickname}: ${det.giftName || 'gift'} x${repeat} (${coins} coins each)`);
+      const g = d.gift || d.giftDetails || d.extendedGiftInfo || {};
+      const giftType = g.type ?? g.giftType ?? d.giftType;
+      if (giftType === 1 && !d.repeatEnd) return; // streak gifts: count once, when the streak ends (repeatEnd is 1/true)
+      const coins = Number(g.diamondCount || d.diamondCount) || 1;
+      const repeat = Number(d.repeatCount || d.comboCount) || 1;
+      const name = g.name || g.giftName || d.giftName || 'Gift';
+      const image = firstUrl(g.image) || firstUrl(g.icon) || firstUrl(g.giftImage) || d.giftPictureUrl || '';
+      broadcast({ type: 'gift', ...userOf(d), giftName: name, coins, repeat, image });
+      log(`[gift] ${userOf(d).nickname}: ${name} x${repeat} (${coins} coins each)`);
     });
-    c.on(WebcastEvent.LIKE, d => broadcast({ type: 'like', ...userOf(d), count: d.likeCount || 1, total: d.totalLikeCount || 0 }));
+    c.on(WebcastEvent.LIKE, d => broadcast({ type: 'like', ...userOf(d), count: Number(d.count ?? d.likeCount) || 1, total: Number(d.total ?? d.totalLikeCount) || 0 }));
     c.on(WebcastEvent.SHARE, d => broadcast({ type: 'share', ...userOf(d) }));
     c.on(WebcastEvent.FOLLOW, d => broadcast({ type: 'follow', ...userOf(d) }));
     c.on(WebcastEvent.MEMBER, d => broadcast({ type: 'member', ...userOf(d) }));
-    c.on(WebcastEvent.ROOM_USER, d => { if (d.viewerCount != null) broadcast({ type: 'viewers', count: d.viewerCount }); });
+    c.on(WebcastEvent.ROOM_USER, d => { const n = d.viewerCount ?? d.total; if (n != null) broadcast({ type: 'viewers', count: Number(n) }); });
   }
 
   function scheduleRetry() {
@@ -141,7 +146,7 @@ function createBridge({ port = 8080, log = console.log, onStatus = () => {} } = 
   }
   function close() { disconnect(); wss.close(); }
 
-  return { connect, disconnect, close, broadcast, getStatus: () => ({ status, username }) };
+  return { connect, disconnect, close, broadcast, getStatus: () => ({ status, username }), _conn: () => conn };
 }
 
 module.exports = { createBridge };
