@@ -12,7 +12,7 @@ The app is not signed with a paid Apple developer certificate, so macOS blocks i
 2. Open it once. macOS says it can't be opened. Click **Done**.
 3. Open **System Settings → Privacy & Security**, scroll down, and click **Open Anyway** next to "Monster Battle Live", then confirm.
 
-If macOS instead says the app "is damaged", run this once in Terminal, then open the app again:
+If macOS still says the app "is damaged" (for example a copy downloaded before v1.1.4), run this once in Terminal, then open the app again:
 ```
 xattr -cr "/Applications/Monster Battle Live.app"
 ```
@@ -76,7 +76,7 @@ The web version also accepts `index.html?tikfinity`.
 npm install
 npm start            # run the app
 npm run dist:win     # Windows .exe + .zip in dist/
-npm run dist:mac     # macOS .zip (must run on a Mac)
+npm run dist:mac     # macOS .app in dist/ (must run on a Mac)
 ```
 
 ## Web version
