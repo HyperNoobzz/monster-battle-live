@@ -2,13 +2,13 @@
 
 **Download the latest Windows app:** [MonsterBattleLive-portable.exe](https://github.com/HyperNoobzz/monster-battle-live/releases/latest/download/MonsterBattleLive-portable.exe) · [all releases](https://github.com/HyperNoobzz/monster-battle-live/releases)
 
-**Mac:** [Apple Silicon (M1–M4)](https://github.com/HyperNoobzz/monster-battle-live/releases/latest/download/MonsterBattleLive-mac-arm64.dmg) · [Intel](https://github.com/HyperNoobzz/monster-battle-live/releases/latest/download/MonsterBattleLive-mac-x64.dmg)
+**Mac:** [Apple Silicon (M1–M4)](https://github.com/HyperNoobzz/monster-battle-live/releases/latest/download/MonsterBattleLive-mac-arm64.zip) · [Intel](https://github.com/HyperNoobzz/monster-battle-live/releases/latest/download/MonsterBattleLive-mac-x64.zip)
 
 Every push to `main` builds new Windows and Mac apps automatically (GitHub Actions → *Build apps*).
 
 ### Opening the Mac app the first time
 The app is not signed with a paid Apple developer certificate, so macOS blocks it the first time.
-1. Open the `.dmg` and drag **Monster Battle Live** into **Applications**.
+1. Double-click the `.zip`, then drag **Monster Battle Live** into **Applications**.
 2. Open it once. macOS says it can't be opened. Click **Done**.
 3. Open **System Settings → Privacy & Security**, scroll down, and click **Open Anyway** next to "Monster Battle Live", then confirm.
 
@@ -76,7 +76,7 @@ The web version also accepts `index.html?tikfinity`.
 npm install
 npm start            # run the app
 npm run dist:win     # Windows .exe + .zip in dist/
-npm run dist:mac     # macOS .dmg (must run on a Mac)
+npm run dist:mac     # macOS .zip (must run on a Mac)
 ```
 
 ## Web version

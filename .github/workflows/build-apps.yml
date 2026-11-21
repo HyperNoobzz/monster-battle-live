@@ -39,14 +39,14 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Build .dmg (Apple Silicon and Intel)
-        run: npx electron-builder --mac dmg --arm64 --x64 --publish never
+      - name: Build Mac app (Apple Silicon and Intel)
+        run: npx electron-builder --mac zip --arm64 --x64 --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
       - uses: actions/upload-artifact@v4
         with:
           name: mac
-          path: dist/MonsterBattleLive-mac-*.dmg
+          path: dist/MonsterBattleLive-mac-*.zip
 
   release:
     needs: [windows, mac]
@@ -65,8 +65,8 @@ jobs:
             **Windows:** download `MonsterBattleLive-portable.exe` and double-click it. No install needed.
             If Windows says "Windows protected your PC", click **More info**, then **Run anyway**.
 
-            **Mac:** download `MonsterBattleLive-mac-arm64.dmg` (Apple Silicon: M1/M2/M3/M4) or `MonsterBattleLive-mac-x64.dmg` (Intel).
-            Open the .dmg and drag the app into Applications. The first time, macOS will block it because it is not from the App Store:
+            **Mac:** download `MonsterBattleLive-mac-arm64.zip` (Apple Silicon: M1/M2/M3/M4) or `MonsterBattleLive-mac-x64.zip` (Intel).
+            Double-click the .zip, then drag **Monster Battle Live** into Applications. The first time, macOS will block it because it is not from the App Store:
             open **System Settings → Privacy & Security**, scroll down and click **Open Anyway**.
 
             **Web version:** `MonsterBattleLive-web.zip` (open `index.html`; see README for the TikTok bridge).
