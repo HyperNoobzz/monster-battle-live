@@ -58,8 +58,8 @@ jobs:
           merge-multiple: true
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.${{ github.run_number }}
-          name: Monster Battle Live v1.0.${{ github.run_number }}
+          tag_name: v1.1.${{ github.run_number }}
+          name: Monster Battle Live v1.1.${{ github.run_number }}
           make_latest: true
           body: |
             **Windows:** download `MonsterBattleLive-portable.exe` and double-click it. No install needed.
