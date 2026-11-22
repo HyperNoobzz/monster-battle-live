@@ -8,6 +8,11 @@ on:
 permissions:
   contents: write
 
+# A newer push cancels an older build, so the newest commit is always the latest release.
+concurrency:
+  group: build-apps
+  cancel-in-progress: true
+
 jobs:
   windows:
     runs-on: windows-latest
