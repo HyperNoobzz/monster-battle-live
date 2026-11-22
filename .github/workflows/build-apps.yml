@@ -3,6 +3,7 @@ name: Build apps
 on:
   push:
     branches: [main]
+    paths-ignore: ['README.md', 'docs/**']   # documentation changes don't need new apps
   workflow_dispatch:
 
 permissions:
