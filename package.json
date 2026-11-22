@@ -9,7 +9,8 @@
     "bridge": "node bridge/bridge.js",
     "dist:win": "electron-builder --win portable zip --x64",
     "dist:mac": "electron-builder --mac dir --arm64 --x64",
-    "dist:linux": "electron-builder --linux AppImage"
+    "dist:linux": "electron-builder --linux AppImage",
+    "test": "node --test test/bridge.test.js"
   },
   "dependencies": {
     "tiktok-live-connector": "^2.5.0",

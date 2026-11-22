@@ -15,6 +15,19 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
+// The connector's event data follows TikTok's current schema (v3): the @handle is
+// user.displayId, chat text is `content`, gift details sit in `gift`, likes in `count`.
+// Older field names are still accepted as fallbacks.
+const firstUrl = img => { const l = img && (img.urlList || img.url_list || img.url || img.urls); return Array.isArray(l) ? l[0] || '' : ''; };
+function userOf(d) {
+  const u = d.user || d;
+  return {
+    user: String(u.uniqueId || u.displayId || u.id || u.userId || d.uniqueId || u.nickname || 'unknown'),
+    nickname: String(u.nickname || u.displayId || u.uniqueId || 'Viewer'),
+    avatar: firstUrl(u.avatarThumb) || firstUrl(u.profilePicture)
+  };
+}
+
 // YouTube search for song requests (no API key; scrapes the results page).
 // Searches the title and "title lyrics" together: official music videos are often blocked
 // from playing outside YouTube, while lyric uploads usually play fine.

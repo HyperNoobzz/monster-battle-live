@@ -201,6 +201,8 @@ body.clean #gear{display:none}
 [hidden]{display:none!important}
 #deskStatus{margin-top:6px;font-weight:800;font-size:12px}
 #sim .note{opacity:.7;font-size:11.5px;line-height:1.4;margin-top:6px}
+#commentLog{opacity:1;max-height:170px;overflow:auto;background:#0d1028;border-radius:6px;padding:6px 8px}
+#commentLog div{padding:1px 0;word-break:break-word}#commentLog .dim{opacity:.6}
 @media (max-width:640px){#sim{left:12px;right:12px;width:auto}}
 </style>
 </head>
@@ -296,6 +298,8 @@ body.clean #gear{display:none}
     <button data-cmd="h">H heal</button>
     <button data-sim="storm">Chat storm ×40</button>
   </div>
+  <h3>LAST COMMENTS RECEIVED</h3>
+  <div id="commentLog" class="note"><div class="dim">No comments received yet.</div></div>
   <h3>SONG REQUESTS</h3>
   <div class="btns">
     <button id="songSkip">Skip song</button>
@@ -692,6 +696,8 @@ let busy = false, busySince = 0;
 function speed(){ return Math.min(6, 1 + queue.length / 2); }
 const wait = ms => new Promise(r => setTimeout(r, ms / speed()));
 let koPending = false; // a knockout is underway: comment hits pause until the next round starts
+let koSince = 0;
+setInterval(() => { if (koPending && !koSince) koSince = Date.now(); if (!koPending) koSince = 0; else if (Date.now() - koSince > 12000){ console.warn('KO flag stuck, clearing'); koPending = false; koSince = 0; } }, 1000);
 function enqueue(item){ queue.push(item); markActive(); pump(); }
 async function pump(){
   if (busy) return;
@@ -923,15 +929,17 @@ function handleEvent(e){
   const user = e.user || e.nickname || 'anon', nickname = e.nickname || e.user || 'Viewer';
   switch (e.type){
     case 'comment': {
-      const raw = String(e.text || '').trim();
+      // Normalize: full-width characters (１, Ａ), invisible characters, surrounding spaces.
+      const raw = String(e.text || '').normalize('NFKC').replace(/[\u200B-\u200F\u2060\uFEFF]/g, '').trim();
       const req = raw.match(/^!(req|request|song|lagu)\s+(.+)$/i);
-      if (req){ requestSong(user, nickname, req[2]); break; }
-      const t = raw.toLowerCase();
-      if (/^(1|red|merah|#1|ronaldo|cr7)$/.test(t)) { joinTeam(user, nickname, 'R'); markActive(); }
-      else if (/^(2|blue|biru|#2|messi|lm10)$/.test(t)) { joinTeam(user, nickname, 'B'); markActive(); }
+      if (req){ requestSong(user, nickname, req[2]); logComment(user, nickname, raw, 'song request'); break; }
+      // The first word decides, so "1 dong", "A gas!!" and "a🔥" count too.
+      const t = (raw.toLowerCase().split(/\s+/)[0] || '').replace(/[^a-z0-9#]+$/, '').replace(/^[^a-z0-9#]+/, '');
+      if (/^(1|red|merah|#1|ronaldo|cr7)$/.test(t)) { joinTeam(user, nickname, 'R'); markActive(); logComment(user, nickname, raw, 'joined ' + teams.R.label); }
+      else if (/^(2|blue|biru|#2|messi|lm10)$/.test(t)) { joinTeam(user, nickname, 'B'); markActive(); logComment(user, nickname, raw, 'joined ' + teams.B.label); }
       else {
-        const cmd = /^(a|atk|attack|serang)!*$/.test(t) ? 'a' : /^(d|def|defend|tahan)!*$/.test(t) ? 'd' : /^(h|heal|sembuh)!*$/.test(t) ? 'h' : null;
-        if (cmd) chatCommand(user, nickname, cmd);
+        const cmd = /^(a|atk|attack|serang)$/.test(t) ? 'a' : /^(d|def|defend|tahan)$/.test(t) ? 'd' : /^(h|heal|sembuh)$/.test(t) ? 'h' : null;
+        logComment(user, nickname, raw, cmd ? chatCommand(user, nickname, cmd) : 'no command');
       }
       break;
     }
@@ -981,7 +989,7 @@ const lastCmd = new Map();
 const pending = { R:{ a:[], d:[], h:[] }, B:{ a:[], d:[], h:[] } };
 function chatCommand(user, nickname, cmd){
   const now = Date.now(), last = lastCmd.get(user) || 0;
-  if (now - last < settings.cmdCooldown * 1000) return; // per-viewer cooldown stops spam
+  if (now - last < settings.cmdCooldown * 1000) return 'cooldown (too soon)'; // per-viewer cooldown stops spam
   lastCmd.set(user, now);
   const k = teamOf(user, nickname), t = teams[k];
   pending[k][cmd].push({ user, nickname });
@@ -993,6 +1001,19 @@ function chatCommand(user, nickname, cmd){
     pending[k].powerReady = (pending[k].powerReady || 0) + 1;
   }
   renderTeamMeta(t); markActive();
+  return (cmd === 'a' ? 'attack' : cmd === 'd' ? 'shield' : 'heal') + ' for ' + t.label + (koPending ? ' (KO in progress)' : '');
+}
+// Recent comments, shown in the ⚙ panel to check what the game receives from TikTok.
+const commentLog = [];
+function logComment(user, nickname, text, result){
+  commentLog.unshift({ user, nickname, text, result, time:new Date().toLocaleTimeString() });
+  commentLog.length = Math.min(commentLog.length, 10);
+  const el = document.getElementById('commentLog');
+  if (el && document.getElementById('sim').classList.contains('open')) renderCommentLog();
+}
+function renderCommentLog(){
+  const el = document.getElementById('commentLog'); if (!el) return;
+  el.innerHTML = commentLog.length ? commentLog.map(c => `<div><b>${esc(c.nickname)}</b> <span class="dim">(${esc(c.user)})</span>: “${esc(c.text.slice(0, 40))}” → ${esc(c.result)}</div>`).join('') : '<div class="dim">No comments received yet.</div>';
 }
 function flushCommands(){
   for (const k of ['R', 'B']){
@@ -1344,8 +1365,8 @@ $('#sim').addEventListener('click', e => {
       break;
   }
 });
-$('#gear').onclick = () => $('#sim').classList.toggle('open');
-addEventListener('keydown', e => { if ((e.key === 's' || e.key === 'S') && e.target.tagName !== 'INPUT') $('#sim').classList.toggle('open'); });
+$('#gear').onclick = () => { $('#sim').classList.toggle('open'); renderCommentLog(); };
+addEventListener('keydown', e => { if ((e.key === 's' || e.key === 'S') && e.target.tagName !== 'INPUT'){ $('#sim').classList.toggle('open'); renderCommentLog(); } });
 
 // settings inputs
 function applyNames(){
@@ -1397,7 +1418,7 @@ if (window.desktop){
                   notlive:'⏳ @{user} is not live yet. Start your LIVE on TikTok; the game checks again every 10 seconds and connects by itself.' };
   const show = s => { st.textContent = (LABEL[s.status] || s.status).replace('{user}', s.username || 'your account') + ((s.status === 'offline' || s.status === 'connecting' || s.status === 'notlive') && s.detail ? ' (' + s.detail.slice(0, 120) + ')' : ''); };
   window.desktop.onStatus(show);
-  window.desktop.onTogglePanel(() => $('#sim').classList.toggle('open'));
+  window.desktop.onTogglePanel(() => { $('#sim').classList.toggle('open'); renderCommentLog(); });
   window.desktop.onShowHelp(() => { $('#sim').classList.add('open'); st.textContent = 'Start your LIVE in TikTok LIVE Studio, type your username here, press Go live, then add this window as a Window Capture source.'; });
   $('#deskGo').onclick = () => {
     const u = userIn.value.trim(); if (!u){ st.textContent = 'Type your TikTok username first.'; userIn.focus(); return; }
