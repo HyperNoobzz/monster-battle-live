@@ -1,13 +1,14 @@
 {
   "name": "monster-battle-bridge",
   "version": "1.0.0",
-  "description": "Relays TikTok Live events (comments, gifts, likes, shares) to the Monster Battle game over WebSocket.",
+  "description": "Serves the Monster Battle game on http://localhost:8080 and relays TikTok Live events (comments, gifts, likes, shares) and YouTube song searches to it.",
   "main": "bridge.js",
   "scripts": {
     "start": "node bridge.js"
   },
   "dependencies": {
     "tiktok-live-connector": "^2.5.0",
-    "ws": "^8.18.0"
+    "ws": "^8.18.0",
+    "yt-search": "2.13.1"
   }
 }
