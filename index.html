@@ -1062,7 +1062,7 @@ window.monsterBattle = { handleEvent }; // for an Electron/desktop wrapper or de
 /* ================= song requests (YouTube) ================= */
 // Viewers comment "!req <title>". The local bridge searches YouTube; songs play one after
 // another in YouTube's own embedded player, shown in the Song Requests card.
-const music = { queue:[], current:null, player:null, ready:false, loading:false, waiters:[], sock:null, pending:new Map(), seq:0, lastReq:new Map(), startTimer:null };
+const music = { userPaused:false, endedFor:null, stuck:0, queue:[], current:null, player:null, ready:false, loading:false, waiters:[], sock:null, pending:new Map(), seq:0, lastReq:new Map(), startTimer:null };
 function songServerUrl(){
   if (location.protocol === 'http:') return `ws://${location.host}`;          // page served by the bridge
   return typeof source !== 'undefined' && source === 'tikfinity' ? null : wsUrl;
@@ -1119,7 +1119,7 @@ function ensurePlayer(cb){
         onReady: () => { music.ready = true; music.player.setVolume(settings.songVolume); music.waiters.splice(0).forEach(f => f()); },
         onStateChange: e => {
           if (e.data === 1) clearTimeout(music.startTimer);                 // playing
-          if (e.data === 0) playNext();                                     // ended
+          if (e.data === 0) songEnded();                                    // ended
         },
         onError: e => tryNextCandidate(e && e.data)                         // 101/150 = owner blocks playing outside YouTube
       }
@@ -1133,7 +1133,10 @@ function ensurePlayer(cb){
 function playCurrent(){
   const c = music.current; if (!c) return;
   const v = c.cands[c.idx];
+  music.userPaused = false; music.stuck = 0;
   music.player.loadVideoById(v.id);
+  // YouTube sometimes loads the next song without starting it: press play ourselves.
+  setTimeout(() => { try{ if (music.current === c && music.player.getPlayerState() !== 1 && !music.userPaused) music.player.playVideo(); }catch(e){} }, 1500);
   clearTimeout(music.startTimer);
   music.startTimer = setTimeout(() => tryNextCandidate('timeout'), 15000);  // never got going: try another result
   renderMusic();
@@ -1151,6 +1154,12 @@ function tryNextCandidate(code){
   const counts = {}; for (const e of c.errors) counts[e] = (counts[e] || 0) + 1;
   const top = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0];
   toast(`🎵 Can't play: ${c.q.slice(0, 24)} (${YT_REASONS[top] || 'error ' + top})`);
+  playNext();
+}
+// Move on once per song, whether YouTube's "ended" event arrives or the watchdog notices first.
+function songEnded(){
+  if (!music.current || music.endedFor === music.current) return;
+  music.endedFor = music.current;
   playNext();
 }
 function playNext(){
@@ -1172,14 +1181,19 @@ function renderMusic(){
     : '';
   $('#mNext').hidden = !music.queue.length;
 }
-// progress bar and paused state
+// Progress bar, plus a watchdog: the hidden player doesn't always report "ended" or
+// keep playing, so check twice a second and move the queue along ourselves.
 setInterval(() => {
   const p = music.player;
   if (!p || !music.current || !p.getDuration) return;
   try{
-    const d = p.getDuration(), t = p.getCurrentTime();
+    const d = p.getDuration(), t = p.getCurrentTime(), st = p.getPlayerState();
     if (d > 0) $('#mBar div').style.width = Math.min(100, t / d * 100) + '%';
-    $('#music').classList.toggle('paused', p.getPlayerState() !== 1);
+    $('#music').classList.toggle('paused', st !== 1);
+    if (st === 0 || (d > 0 && t >= d - 0.6 && st !== 1 && st !== 3)) return songEnded();   // finished
+    if (st !== 1 && st !== 3 && !music.userPaused){                                       // stalled, cued or paused by the browser
+      if (++music.stuck % 4 === 0) p.playVideo();                                          // nudge every 2s
+    } else music.stuck = 0;
   }catch(e){}
 }, 500);
 
@@ -1350,7 +1364,7 @@ songsIn.checked = settings.songReq; volIn.value = settings.songVolume;
 songsIn.onchange = () => { settings.songReq = songsIn.checked; saveSettings(); if (!settings.songReq){ music.queue = []; playNext(); } renderMusic(); };
 volIn.oninput = () => { settings.songVolume = +volIn.value; saveSettings(); try{ music.player && music.player.setVolume(settings.songVolume); }catch(e){} };
 $('#songSkip').onclick = () => playNext();
-$('#songPause').onclick = () => { const p = music.player; if (!p || !music.current) return; try{ p.getPlayerState() === 1 ? p.pauseVideo() : p.playVideo(); }catch(e){} };
+$('#songPause').onclick = () => { const p = music.player; if (!p || !music.current) return; try{ if (p.getPlayerState() === 1){ music.userPaused = true; p.pauseVideo(); } else { music.userPaused = false; p.playVideo(); } }catch(e){} };
 $('#songClear').onclick = () => { music.queue = []; renderMusic(); };
 const guideIn = $('#setGuide');
 guideIn.checked = settings.showGiftGuide;
