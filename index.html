@@ -82,7 +82,7 @@ body.transparent{background:transparent}
 /* HP boxes */
 .hpbox{position:absolute;width:226px;background:var(--paper);border:3px solid var(--ink);border-radius:12px 4px 12px 4px;padding:13px 9px 6px;box-shadow:4px 4px 0 #0005;z-index:1}
 #hpB{left:12px;top:14px}
-#hpR{left:302px;top:208px}
+#hpR{left:302px;top:213px}
 .hpbox .team{position:absolute;top:-14px;left:10px;font-family:var(--pixel);font-size:9px;color:#fff;padding:4px 7px;border-radius:4px;border:2px solid var(--ink)}
 #hpR .team{background:var(--red)}#hpB .team{background:var(--blue)}
 .hpbox .row1{display:flex;justify-content:space-between;align-items:baseline;gap:6px}
@@ -119,8 +119,8 @@ body.transparent{background:transparent}
 #stage.quake{animation:quake .5s}
 @keyframes quake{20%{transform:var(--scale) translate(-8px,6px)}40%{transform:var(--scale) translate(8px,-6px)}60%{transform:var(--scale) translate(-6px,-4px)}80%{transform:var(--scale) translate(4px,4px)}}
 /* toast feed */
-#toasts{position:absolute;left:252px;right:10px;top:164px;display:flex;flex-direction:column;align-items:flex-end;gap:3px;pointer-events:none;z-index:2}
-.toast{font-weight:900;font-size:12px;color:#fff;padding:2px 10px;border-radius:20px;background:#000a;animation:toast 2.6s forwards;white-space:nowrap;max-width:276px;overflow:hidden;text-overflow:ellipsis}
+#toasts{position:absolute;left:252px;right:10px;top:158px;display:flex;flex-direction:column;align-items:flex-end;gap:2px;pointer-events:none;z-index:2}
+.toast{font-weight:900;font-size:11.5px;color:#fff;padding:1px 9px;border-radius:20px;background:#000a;animation:toast 2.6s forwards;white-space:nowrap;max-width:276px;overflow:hidden;text-overflow:ellipsis}
 .toast.r{background:#c81e3ccc}.toast.b{background:#1a5fc8cc}
 @keyframes toast{0%{opacity:0;transform:translateY(8px)}10%,80%{opacity:1;transform:none}100%{opacity:0}}
 /* speed tag */
@@ -143,7 +143,7 @@ body.transparent{background:transparent}
 .hrow kbd.kr{background:var(--red);color:#fff}.hrow kbd.kb{background:var(--blue);color:#fff}
 .hrow.cmds{gap:3px}.hrow.cmds kbd{margin-left:3px}.hrow.cmds kbd:first-child{margin-left:0}
 .hrow .tl-R{color:#ff8a98}.hrow .tl-B{color:#8cc0ff}
-.grow{display:flex;align-items:center;gap:6px;height:34px}
+.grow{display:flex;align-items:center;gap:6px;height:32px}
 .grow .gi{width:30px;height:30px;flex:none;font-size:22px;display:flex;align-items:center;justify-content:center}
 .grow .gi img{width:30px;height:30px;object-fit:contain;display:block}
 .grow .gt{min-width:0;flex:1}
@@ -152,6 +152,19 @@ body.transparent{background:transparent}
 .grow .gn b{color:var(--gold);font-size:11px;white-space:nowrap}
 .grow .ge{font-size:10px;font-weight:800;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .grow.t3 .ge{color:#ffa6e6;opacity:1}
+/* song requests (lower-left; sits under TikTok's comments, which is fine for music) */
+#music{position:absolute;left:12px;top:592px;width:336px;z-index:2}
+#music .mrow{display:flex;gap:8px}
+#ytWrap{position:relative;width:200px;height:200px;flex:none;border-radius:6px;overflow:hidden;background:#000}
+#ytWrap iframe{width:200px;height:200px;display:block;border:0}
+#ytIdle{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:50px;background:radial-gradient(circle,#2a3466,#0d1028)}
+#ytIdle span{font-size:11px;font-weight:900;text-align:center;padding:0 10px}
+#music .minfo{min-width:0;flex:1;font-size:12px;font-weight:800}
+#mNow{font-weight:900;font-size:13px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+#mBy{color:var(--gold);font-size:11px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#mNext{margin-top:10px;font-size:11px}
+#mNext h6{font-family:var(--pixel);font-size:6px;color:var(--gold);margin-bottom:3px;font-weight:400}
+#mNext div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.85;line-height:16px}
 /* setup helper: where TikTok's own UI covers the stream on phones */
 #zones{position:absolute;inset:0;pointer-events:none;z-index:6}
 #zones div{position:absolute;display:flex;align-items:center;justify-content:center;font-family:var(--pixel);font-size:8px;color:#fff;text-shadow:1px 1px 0 #000;
@@ -238,8 +251,16 @@ body.clean #gear{display:none}
       <div class="hrow" id="powHint">⚡ 30 commands = POWER</div>
       <div class="hrow" id="likeHint">❤ 100 likes = free hit</div>
       <div class="hrow">🔁 Share = heal</div>
+      <div class="hrow">🎵 <b>!req</b>&nbsp;song = music</div>
     </div>
     <div class="card" id="giftGuide"></div>
+  </div>
+  <div class="card" id="music">
+    <h5>🎵 SONG REQUESTS</h5>
+    <div class="mrow">
+      <div id="ytWrap"><div id="ytPlayer"></div><div id="ytIdle">🎵<span>Comment !req + song title</span></div></div>
+      <div class="minfo"><div id="mNow">Nothing playing</div><div id="mBy"></div><div id="mNext"></div></div>
+    </div>
   </div>
   <div id="frame"></div>
   <div id="zones" hidden>
@@ -265,6 +286,16 @@ body.clean #gear{display:none}
     <button data-cmd="h">H heal</button>
     <button data-sim="storm">Chat storm ×40</button>
   </div>
+  <h3>SONG REQUESTS</h3>
+  <div class="btns">
+    <button id="songSkip">Skip song</button>
+    <button id="songPause">Pause / play</button>
+    <button id="songClear">Clear queue</button>
+    <button data-sim="songreq">Test !req</button>
+  </div>
+  <label for="setSongs">Allow !req song requests <input id="setSongs" type="checkbox"></label>
+  <label for="setVol">Music volume <input id="setVol" type="range" min="0" max="100" step="5"></label>
+  <div class="note">Songs come from YouTube. Copyrighted music can get your LIVE muted or flagged by TikTok.</div>
   <h3>SUPPORT ATTACKS (not shown on screen)</h3>
   <div class="btns">
     <button data-gift="1">1 🪙</button>
@@ -326,7 +357,7 @@ const store = {
 };
 
 /* ================= settings ================= */
-const settings = Object.assign({ baseHp: 1000, dmgPerCoin: 8, likesPerAttack: 100, powerGoal: 30, cmdCooldown: 3, showGiftGuide: true, nameR: 'RONALDO', nameB: 'MESSI', sound: true }, store.get('settings', {}));
+const settings = Object.assign({ baseHp: 1000, dmgPerCoin: 8, likesPerAttack: 100, powerGoal: 30, cmdCooldown: 3, showGiftGuide: true, nameR: 'RONALDO', nameB: 'MESSI', songReq: true, songVolume: 60, sound: true }, store.get('settings', {}));
 function saveSettings(){ store.set('settings', settings); }
 
 /* ================= scaling ================= */
@@ -876,7 +907,10 @@ function handleEvent(e){
   const user = e.user || e.nickname || 'anon', nickname = e.nickname || e.user || 'Viewer';
   switch (e.type){
     case 'comment': {
-      const t = String(e.text || '').trim().toLowerCase();
+      const raw = String(e.text || '').trim();
+      const req = raw.match(/^!(req|request|song|lagu)\s+(.+)$/i);
+      if (req){ requestSong(user, nickname, req[2]); break; }
+      const t = raw.toLowerCase();
       if (/^(1|red|merah|#1|ronaldo|cr7)$/.test(t)) { joinTeam(user, nickname, 'R'); markActive(); }
       else if (/^(2|blue|biru|#2|messi|lm10)$/.test(t)) { joinTeam(user, nickname, 'B'); markActive(); }
       else {
@@ -969,6 +1003,110 @@ setInterval(flushCommands, 1200);
 
 window.monsterBattle = { handleEvent }; // for an Electron/desktop wrapper or devtools
 
+/* ================= song requests (YouTube) ================= */
+// Viewers comment "!req <title>". The local bridge searches YouTube; songs play one after
+// another in YouTube's own embedded player, shown in the Song Requests card.
+const music = { queue:[], current:null, player:null, ready:false, loading:false, waiters:[], sock:null, pending:new Map(), seq:0, lastReq:new Map(), startTimer:null };
+function songServerUrl(){
+  if (location.protocol === 'http:') return `ws://${location.host}`;          // page served by the bridge
+  return typeof source !== 'undefined' && source === 'tikfinity' ? null : wsUrl;
+}
+function songSock(){
+  if (music.sock && music.sock.readyState <= 1) return music.sock;
+  const url = songServerUrl(); if (!url) return null;
+  let s; try { s = new WebSocket(url); } catch (e) { return null; }
+  s.onmessage = ev => {
+    let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
+    if (m.type !== 'ytresult') return;
+    const p = music.pending.get(m.id); if (!p) return;
+    music.pending.delete(m.id); clearTimeout(p.timer); p.resolve(m.results || []);
+  };
+  s.onclose = () => { for (const [id, p] of music.pending){ clearTimeout(p.timer); p.reject(new Error('closed')); music.pending.delete(id); } };
+  return music.sock = s;
+}
+function searchSong(q){
+  return new Promise((resolve, reject) => {
+    const s = songSock(); if (!s) return reject(new Error('no song server'));
+    const id = ++music.seq;
+    const timer = setTimeout(() => { music.pending.delete(id); reject(new Error('timeout')); }, 15000);
+    music.pending.set(id, { resolve, reject, timer });
+    const send = () => s.send(JSON.stringify({ type:'ytsearch', id, q }));
+    if (s.readyState === 1) send(); else s.addEventListener('open', send, { once:true });
+  });
+}
+function requestSong(user, nickname, q){
+  markActive();
+  if (!settings.songReq) return;
+  q = q.replace(/\s+/g, ' ').trim().slice(0, 80); if (!q) return;
+  const now = Date.now();
+  if (now - (music.lastReq.get(user) || 0) < 30000) return;                  // one request per viewer per 30s
+  if (music.queue.filter(x => x.user === user).length >= 2) return toast(`🎵 ${short(nickname)}: you already have 2 songs waiting`);
+  if (music.queue.length >= 15) return toast('🎵 Song queue is full');
+  music.lastReq.set(user, now);
+  searchSong(q).then(results => {
+    if (!results.length) return toast(`🎵 Not found: ${q.slice(0, 30)}`);
+    music.queue.push({ user, nickname, q, cands:results, idx:0 });
+    toast(`🎵 ${short(nickname)} added: ${results[0].title.slice(0, 34)}`);
+    if (!music.current) playNext(); else renderMusic();
+  }).catch(() => toast('🎵 Song requests need the desktop app or bridge'));
+}
+function ensurePlayer(cb){
+  if (music.ready) return cb();
+  music.waiters.push(cb);
+  if (music.loading) return;
+  music.loading = true;
+  window.onYouTubeIframeAPIReady = () => {
+    music.player = new YT.Player('ytPlayer', {
+      width:'200', height:'200',
+      playerVars: Object.assign({ autoplay:1, controls:0, rel:0, playsinline:1, iv_load_policy:3 }, /^https?:/.test(location.protocol) ? { origin:location.origin } : {}),
+      events: {
+        onReady: () => { music.ready = true; music.player.setVolume(settings.songVolume); music.waiters.splice(0).forEach(f => f()); },
+        onStateChange: e => {
+          if (e.data === 1) clearTimeout(music.startTimer);                 // playing
+          if (e.data === 0) playNext();                                     // ended
+        },
+        onError: () => tryNextCandidate()                                   // not embeddable, removed, etc.
+      }
+    });
+  };
+  const sc = document.createElement('script');
+  sc.src = 'https://www.youtube.com/iframe_api';
+  sc.onerror = () => { music.loading = false; toast('🎵 Could not load the YouTube player'); };
+  document.head.appendChild(sc);
+}
+function playCurrent(){
+  const c = music.current; if (!c) return;
+  const v = c.cands[c.idx];
+  music.player.loadVideoById(v.id);
+  clearTimeout(music.startTimer);
+  music.startTimer = setTimeout(tryNextCandidate, 15000);                   // never got going: try another result
+  renderMusic();
+}
+function tryNextCandidate(){
+  const c = music.current; if (!c) return;
+  c.idx++;
+  if (c.idx < c.cands.length) return playCurrent();
+  toast(`🎵 Can't play: ${c.q.slice(0, 30)}`);
+  playNext();
+}
+function playNext(){
+  clearTimeout(music.startTimer);
+  music.current = music.queue.shift() || null;
+  if (!music.current){ try{ music.player && music.player.stopVideo(); }catch(e){} renderMusic(); return; }
+  ensurePlayer(playCurrent);
+  renderMusic();
+}
+function renderMusic(){
+  $('#music').hidden = !settings.songReq;
+  const c = music.current, v = c && c.cands[c.idx];
+  $('#ytIdle').hidden = !!c;
+  $('#mNow').textContent = v ? v.title : 'Nothing playing';
+  $('#mBy').textContent = c ? `requested by ${short(c.nickname)}` : '';
+  $('#mNext').innerHTML = music.queue.length
+    ? '<h6>UP NEXT</h6>' + music.queue.slice(0, 3).map(x => `<div>${esc(x.cands[0].title)}</div>`).join('') + (music.queue.length > 3 ? `<div>+${music.queue.length - 3} more</div>` : '')
+    : '';
+}
+
 /* ================= AFK mode ================= */
 let lastActive = Date.now(), afkIdx = 0, afkOn = false;
 const AFK_LINES = [
@@ -979,6 +1117,7 @@ const AFK_LINES = [
   `Share the live 🔁 to heal your player!`,
   `Type advantage deals <b>×1.5</b> damage. Crits deal <b>×2</b>!`,
   `Top damage dealer becomes the round's 👑 MVP!`,
+  `Request a song: comment <b>!req</b> + song title 🎵`,
 ];
 function markActive(){ lastActive = Date.now(); afkOn = false; }
 setInterval(() => {
@@ -1103,6 +1242,7 @@ $('#sim').addEventListener('click', e => {
     case 'join2': handleEvent({ type:'comment', ...fakeUser(), text:'2' }); break;
     case 'join10': for (let i = 0; i < 10; i++) setTimeout(() => handleEvent({ type:'comment', ...fakeUser(), text: Math.random() < .5 ? '1' : '2' }), i * 120); break;
     case 'streak': simGift(1, 15); break;
+    case 'songreq': handleEvent({ type:'comment', ...existingOrNew(), text:'!req ' + pick(Math.random, ['tak ingin usai', 'perfect ed sheeran', 'bergema sampai selamanya', 'shape of you']) }); break;
     case 'storm': for (let i = 0; i < 40; i++) setTimeout(() => handleEvent({ type:'comment', ...fakeUser(), text: pick(Math.random, ['a','a','a','d','h']) }), i * 50); break;
     case 'likes': handleEvent({ type:'like', ...existingOrNew(), count:100 }); break;
     case 'share': handleEvent({ type:'share', ...fakeUser() }); break;
@@ -1129,6 +1269,13 @@ const nameRIn = $('#setNameR'), nameBIn = $('#setNameB');
 nameRIn.value = settings.nameR; nameBIn.value = settings.nameB;
 nameRIn.onchange = () => { settings.nameR = nameRIn.value.trim().toUpperCase().slice(0, 12) || 'RED'; nameRIn.value = settings.nameR; saveSettings(); applyNames(); };
 nameBIn.onchange = () => { settings.nameB = nameBIn.value.trim().toUpperCase().slice(0, 12) || 'BLUE'; nameBIn.value = settings.nameB; saveSettings(); applyNames(); };
+const songsIn = $('#setSongs'), volIn = $('#setVol');
+songsIn.checked = settings.songReq; volIn.value = settings.songVolume;
+songsIn.onchange = () => { settings.songReq = songsIn.checked; saveSettings(); if (!settings.songReq){ music.queue = []; playNext(); } renderMusic(); };
+volIn.oninput = () => { settings.songVolume = +volIn.value; saveSettings(); try{ music.player && music.player.setVolume(settings.songVolume); }catch(e){} };
+$('#songSkip').onclick = () => playNext();
+$('#songPause').onclick = () => { const p = music.player; if (!p || !music.current) return; try{ p.getPlayerState() === 1 ? p.pauseVideo() : p.playVideo(); }catch(e){} };
+$('#songClear').onclick = () => { music.queue = []; renderMusic(); };
 const guideIn = $('#setGuide');
 guideIn.checked = settings.showGiftGuide;
 guideIn.onchange = () => { settings.showGiftGuide = guideIn.checked; saveSettings(); showGuide(); };
@@ -1173,7 +1320,7 @@ if (window.desktop){
 }
 
 /* ================= boot ================= */
-newMonster(teams.R); newMonster(teams.B); applyNames(); renderGiftGuide();
+newMonster(teams.R); newMonster(teams.B); applyNames(); renderGiftGuide(); renderMusic();
 renderTeamMeta(teams.R); renderTeamMeta(teams.B); renderBoards(); renderScore();
 say(`Kick-off! ${teamSpan('R', teams.R.mon.name)} vs ${teamSpan('B', teams.B.mon.name)}!`);
 lastActive = Date.now() - 8000; // start AFK prompts soon

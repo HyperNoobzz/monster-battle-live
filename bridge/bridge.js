@@ -1,7 +1,8 @@
 // Monster Battle — TikTok Live bridge
-// CLI:     node bridge.js <tiktok_username> [port]
+// CLI:     node bridge.js <tiktok_username> [port]   then open http://localhost:<port>/
 // Module:  const { createBridge } = require('./bridge'); const b = createBridge({ port }); b.connect('username');
-// The game page connects to ws://localhost:<port> (default 8080).
+// One local server on 127.0.0.1:<port> serves the game page over HTTP (YouTube's player
+// refuses to play inside pages opened as files) and the WebSocket the page connects to.
 
 // tiktok-live-connector ships as an ES module, so it is loaded with import() (works in Node and Electron).
 let lib = null;
@@ -10,6 +11,21 @@ function loadLib() {
   return import('tiktok-live-connector').then(m => (lib = m.TikTokLiveConnection ? m : m.default));
 }
 const { WebSocketServer } = require('ws');
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+
+// YouTube search for song requests (no API key; scrapes the results page).
+function youtubeSearch(q) {
+  const yts = require('yt-search');
+  return Promise.race([
+    yts({ query: q, pages: 1 }),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('YouTube search timed out')), 12000))
+  ]).then(r => (r.videos || [])
+    .filter(v => v.videoId && v.seconds >= 30 && v.seconds <= 600)   // skip shorts and very long videos
+    .slice(0, 6)
+    .map(v => ({ id: v.videoId, title: v.title, author: v.author && v.author.name, seconds: v.seconds })));
+}
 
 // The connector's event data follows TikTok's current schema (v3): the @handle is
 // user.displayId, chat text is `content`, gift details sit in `gift`, likes in `count`.
@@ -24,8 +40,20 @@ function userOf(d) {
   };
 }
 
-function createBridge({ port = 8080, log = console.log, onStatus = () => {} } = {}) {
-  const wss = new WebSocketServer({ port, host: '127.0.0.1' });
+function createBridge({ port = 8080, log = console.log, onStatus = () => {}, appDir = path.join(__dirname, '..'), search = youtubeSearch } = {}) {
+  const indexFile = path.join(appDir, 'index.html');
+  const server = http.createServer((req, res) => {
+    const url = (req.url || '/').split('?')[0];
+    if (url !== '/' && url !== '/index.html') { res.writeHead(404); return res.end(); }
+    fs.readFile(indexFile, (err, buf) => {
+      if (err) { res.writeHead(404); return res.end('index.html not found'); }
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+      res.end(buf);
+    });
+  });
+  const wss = new WebSocketServer({ server });
+  server.on('error', err => log('[bridge] server error: ' + err.message));
+  server.listen(port, '127.0.0.1');
   let status = 'idle', username = '', conn = null, retryTimer = null, retryDelay = 5000, stopped = true;
   let attempt = 0;
   let skipLiveCheck = false; // alternate attempts skip TikTok's "is live" check, which can wrongly say offline
@@ -43,9 +71,18 @@ function createBridge({ port = 8080, log = console.log, onStatus = () => {} } = 
   wss.on('connection', ws => {
     ws.send(JSON.stringify({ type: 'status', status, username }));
     if (giftList) ws.send(JSON.stringify({ type: 'giftlist', gifts: giftList }));
+    // The page asks the bridge to search YouTube for song requests.
+    ws.on('message', raw => {
+      let m; try { m = JSON.parse(raw); } catch (e) { return; }
+      if (!m || m.type !== 'ytsearch') return;
+      const q = String(m.q || '').slice(0, 100);
+      search(q)
+        .then(results => ws.send(JSON.stringify({ type: 'ytresult', id: m.id, results })))
+        .catch(err => { log('[songs] search failed: ' + err.message); ws.send(JSON.stringify({ type: 'ytresult', id: m.id, results: [], error: err.message })); });
+    });
   });
   wss.on('error', err => log('[bridge] WebSocket server error: ' + err.message));
-  log(`[bridge] WebSocket server on ws://localhost:${port}`);
+  log(`[bridge] game page: http://localhost:${port}/   WebSocket: ws://localhost:${port}`);
 
   function attach(c) {
     const { WebcastEvent, ControlEvent } = lib;
@@ -144,7 +181,7 @@ function createBridge({ port = 8080, log = console.log, onStatus = () => {} } = 
       tryConnect();
     }).catch(err => { log('[bridge] could not load tiktok-live-connector: ' + err.message); setStatus('offline', err.message); });
   }
-  function close() { disconnect(); wss.close(); }
+  function close() { disconnect(); wss.close(); server.close(); }
 
   return { connect, disconnect, close, broadcast, getStatus: () => ({ status, username }), _conn: () => conn };
 }

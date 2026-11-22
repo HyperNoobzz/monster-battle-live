@@ -54,10 +54,11 @@ async function createWindow() {
     width: 540, height: 960, useContentSize: true, minWidth: 270, minHeight: 480,
     backgroundColor: '#0b0d16', title: 'Monster Battle Live',
     icon: path.join(__dirname, 'icon.png'),
-    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, backgroundThrottling: false }
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, backgroundThrottling: false, autoplayPolicy: 'no-user-gesture-required' }
   });
   win.setAspectRatio(9 / 16);
-  win.loadFile(path.join(__dirname, '..', 'index.html'), { query: { ws: `ws://127.0.0.1:${port}`, desktop: '1' } });
+  // Served over local HTTP by the bridge: YouTube's player (song requests) won't play in file:// pages.
+  win.loadURL(`http://127.0.0.1:${port}/?ws=${encodeURIComponent(`ws://127.0.0.1:${port}`)}&desktop=1`);
   win.webContents.setWindowOpenHandler(({ url }) => { if (/^https:/.test(url)) shell.openExternal(url); return { action: 'deny' }; });
   buildMenu();
 }

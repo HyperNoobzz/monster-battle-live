@@ -66,6 +66,15 @@ The sender's name appears in gold with a ⭐, the gift's picture pops up above t
 The pictures are TikTok's own gift images, loaded live from TikTok when the game is connected (each picture is learned the first time someone sends that gift; loading the room's full gift list up front needs a paid Euler Stream plan, so the game only tries it and carries on if it fails). They are remembered on that computer. Until a picture is known, an emoji stands in (🌹 💗 🍩 🎉).
 Turn the guide off with **Show gift guide on screen** in the ⚙ panel.
 
+## Song requests (!req)
+Viewers comment `!req <song title>` (also `!request`, `!song`, `!lagu`). The game searches YouTube, queues the song, and plays it in YouTube's own player in the **Song requests** card (lower-left), with who requested it and what's up next.
+- One request per viewer every 30 seconds, at most 2 waiting per viewer, 15 in the queue.
+- Videos shorter than 30 s or longer than 10 min are skipped. If a video can't be embedded, the next search result is tried.
+- ⚙ panel: **Skip song**, **Pause / play**, **Clear queue**, **Allow !req song requests**, **Music volume**.
+- Works in the desktop app, and in the web version when it is opened from the bridge at `http://localhost:8080/` (YouTube's player does not play in pages opened as files).
+
+**Copyright:** commercial songs played on a TikTok LIVE can get the LIVE muted or flagged. Turn requests off in ⚙ if that happens.
+
 ## Desktop app (Windows)
 Run `MonsterBattleLive-portable.exe`. Nothing needs installing, and Node.js is not required.
 1. Start your LIVE in TikTok LIVE Studio.
@@ -99,7 +108,7 @@ npm run dist:mac     # macOS .app in dist/ (must run on a Mac)
    npm install
    node bridge.js YOUR_TIKTOK_USERNAME
    ```
-   Then open `index.html`. It auto-connects to `ws://localhost:8080`. The header shows `LIVE @username` once connected.
+   Then open `http://localhost:8080/` in your browser (the bridge serves the game). Opening `index.html` directly also works, but song requests need the `http://localhost:8080/` address. The header shows `LIVE @username` once connected.
 3. **In OBS / TikTok LIVE Studio:** add a Browser Source pointing to `index.html?clean`, set to 1080×1920.
    `?clean` hides the ⚙ button. Use `?ws=ws://host:port` for a different bridge address.
 
