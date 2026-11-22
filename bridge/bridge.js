@@ -16,28 +16,25 @@ const fs = require('fs');
 const path = require('path');
 
 // YouTube search for song requests (no API key; scrapes the results page).
+// Searches the title and "title lyrics" together: official music videos are often blocked
+// from playing outside YouTube, while lyric uploads usually play fine.
 function youtubeSearch(q) {
   const yts = require('yt-search');
-  return Promise.race([
-    yts({ query: q, pages: 1 }),
+  const one = query => Promise.race([
+    yts({ query, pages: 1 }).then(r => r.videos || []),
     new Promise((_, reject) => setTimeout(() => reject(new Error('YouTube search timed out')), 12000))
-  ]).then(r => (r.videos || [])
-    .filter(v => v.videoId && v.seconds >= 30 && v.seconds <= 600)   // skip shorts and very long videos
-    .slice(0, 6)
-    .map(v => ({ id: v.videoId, title: v.title, author: v.author && v.author.name, seconds: v.seconds })));
-}
-
-// The connector's event data follows TikTok's current schema (v3): the @handle is
-// user.displayId, chat text is `content`, gift details sit in `gift`, likes in `count`.
-// Older field names are still accepted as fallbacks.
-const firstUrl = img => { const l = img && (img.urlList || img.url_list || img.url || img.urls); return Array.isArray(l) ? l[0] || '' : ''; };
-function userOf(d) {
-  const u = d.user || d;
-  return {
-    user: String(u.uniqueId || u.displayId || u.id || u.userId || d.uniqueId || 'unknown'),
-    nickname: String(u.nickname || u.displayId || u.uniqueId || 'Viewer'),
-    avatar: firstUrl(u.avatarThumb) || firstUrl(u.profilePicture)
-  };
+  ]);
+  return Promise.allSettled([one(q), one(q + ' lyrics')]).then(([a, b]) => {
+    if (a.status === 'rejected' && b.status === 'rejected') throw a.reason;
+    const A = a.status === 'fulfilled' ? a.value : [], B = b.status === 'fulfilled' ? b.value : [];
+    const mixed = [];
+    for (let i = 0; i < Math.max(A.length, B.length); i++) { if (A[i]) mixed.push(A[i]); if (B[i]) mixed.push(B[i]); }
+    const seen = new Set();
+    return mixed
+      .filter(v => v.videoId && v.seconds >= 30 && v.seconds <= 600 && !seen.has(v.videoId) && seen.add(v.videoId)) // skip shorts and very long videos
+      .slice(0, 10)
+      .map(v => ({ id: v.videoId, title: v.title, author: v.author && v.author.name, seconds: v.seconds }));
+  });
 }
 
 function createBridge({ port = 8080, log = console.log, onStatus = () => {}, appDir = path.join(__dirname, '..'), search = youtubeSearch } = {}) {

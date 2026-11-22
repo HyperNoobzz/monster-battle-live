@@ -1121,7 +1121,7 @@ function ensurePlayer(cb){
           if (e.data === 1) clearTimeout(music.startTimer);                 // playing
           if (e.data === 0) playNext();                                     // ended
         },
-        onError: () => tryNextCandidate()                                   // not embeddable, removed, etc.
+        onError: e => tryNextCandidate(e && e.data)                         // 101/150 = owner blocks playing outside YouTube
       }
     });
   };
@@ -1135,14 +1135,22 @@ function playCurrent(){
   const v = c.cands[c.idx];
   music.player.loadVideoById(v.id);
   clearTimeout(music.startTimer);
-  music.startTimer = setTimeout(tryNextCandidate, 15000);                   // never got going: try another result
+  music.startTimer = setTimeout(() => tryNextCandidate('timeout'), 15000);  // never got going: try another result
   renderMusic();
 }
-function tryNextCandidate(){
+const YT_REASONS = { 101:'blocked outside YouTube', 150:'blocked outside YouTube', 100:'video removed', 2:'bad video id', 5:'player error',
+                     152:'YouTube player setup error', 153:'YouTube player setup error', timeout:"didn't start" };
+function tryNextCandidate(code){
   const c = music.current; if (!c) return;
+  clearTimeout(music.startTimer);
+  (c.errors = c.errors || []).push(code);
+  console.warn('[songs] cannot play', c.cands[c.idx] && c.cands[c.idx].id, 'reason', code);
   c.idx++;
   if (c.idx < c.cands.length) return playCurrent();
-  toast(`🎵 Can't play: ${c.q.slice(0, 30)}`);
+  // Say why, using the most common reason across all tried videos.
+  const counts = {}; for (const e of c.errors) counts[e] = (counts[e] || 0) + 1;
+  const top = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0];
+  toast(`🎵 Can't play: ${c.q.slice(0, 24)} (${YT_REASONS[top] || 'error ' + top})`);
   playNext();
 }
 function playNext(){
