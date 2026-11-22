@@ -67,7 +67,7 @@ The pictures are TikTok's own gift images, loaded live from TikTok when the game
 Turn the guide off with **Show gift guide on screen** in the ⚙ panel.
 
 ## Song requests (!req)
-Viewers comment `!req <song title>` (also `!request`, `!song`, `!lagu`). The game searches YouTube, queues the song, and plays it in YouTube's own player in the **Song requests** card (lower-left), with who requested it and what's up next.
+Viewers comment `!req <song title>` (also `!request`, `!song`, `!lagu`). The game searches YouTube, queues the song, and plays **the audio only**: the **Now playing** card (lower-left) shows the song's cover, title, who requested it, a progress bar and what's up next. The YouTube player runs in the background without showing the video. YouTube's terms ask for its player to be visible, so YouTube could stop playback in this mode at some point.
 - One request per viewer every 30 seconds, at most 2 waiting per viewer, 15 in the queue.
 - Videos shorter than 30 s or longer than 10 min are skipped. If a video can't be embedded, the next search result is tried.
 - ⚙ panel: **Skip song**, **Pause / play**, **Clear queue**, **Allow !req song requests**, **Music volume**.

@@ -154,17 +154,25 @@ body.transparent{background:transparent}
 .grow.t3 .ge{color:#ffa6e6;opacity:1}
 /* song requests (lower-left; sits under TikTok's comments, which is fine for music) */
 #music{position:absolute;left:12px;top:592px;width:336px;z-index:2}
-#music .mrow{display:flex;gap:8px}
-#ytWrap{position:relative;width:200px;height:200px;flex:none;border-radius:6px;overflow:hidden;background:#000}
-#ytWrap iframe{width:200px;height:200px;display:block;border:0}
-#ytIdle{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:50px;background:radial-gradient(circle,#2a3466,#0d1028)}
-#ytIdle span{font-size:11px;font-weight:900;text-align:center;padding:0 10px}
+#music .mrow{display:flex;gap:10px;align-items:center}
+#mArt{position:relative;width:72px;height:72px;flex:none;border-radius:8px;overflow:hidden;background:radial-gradient(circle,#3a4a8a,#141a3a);display:flex;align-items:center;justify-content:center;font-size:34px;box-shadow:0 4px 10px #0008}
+#mArt img{width:100%;height:100%;object-fit:cover;display:block}
+#mEq{position:absolute;left:6px;bottom:6px;display:flex;gap:2px;align-items:flex-end;height:16px}
+#mEq i{width:3px;background:#fff;border-radius:1px;animation:eq .8s ease-in-out infinite;box-shadow:0 0 4px #000}
+#mEq i:nth-child(2){animation-delay:-.3s}#mEq i:nth-child(3){animation-delay:-.55s}#mEq i:nth-child(4){animation-delay:-.15s}
+@keyframes eq{0%,100%{height:4px}50%{height:16px}}
+#music.paused #mEq i{animation-play-state:paused}
 #music .minfo{min-width:0;flex:1;font-size:12px;font-weight:800}
-#mNow{font-weight:900;font-size:13px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
-#mBy{color:var(--gold);font-size:11px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#mNext{margin-top:10px;font-size:11px}
+#mNow{font-weight:900;font-size:14px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#mBy{color:var(--gold);font-size:11px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#mBar{height:4px;background:#ffffff26;border-radius:2px;margin-top:7px;overflow:hidden}
+#mBar div{height:100%;width:0;background:linear-gradient(90deg,var(--red),var(--gold),var(--blue));transition:width .5s linear}
+#mNext{margin-top:8px;font-size:11px;border-top:1px solid #ffffff1a;padding-top:6px}
 #mNext h6{font-family:var(--pixel);font-size:6px;color:var(--gold);margin-bottom:3px;font-weight:400}
 #mNext div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.85;line-height:16px}
+/* the YouTube player only provides the audio: it stays loaded but is not shown */
+#ytWrap{position:absolute;left:0;top:0;width:200px;height:200px;opacity:.01;pointer-events:none;z-index:-1}
+#ytWrap iframe{width:200px;height:200px;border:0}
 /* setup helper: where TikTok's own UI covers the stream on phones */
 #zones{position:absolute;inset:0;pointer-events:none;z-index:6}
 #zones div{position:absolute;display:flex;align-items:center;justify-content:center;font-family:var(--pixel);font-size:8px;color:#fff;text-shadow:1px 1px 0 #000;
@@ -256,11 +264,13 @@ body.clean #gear{display:none}
     <div class="card" id="giftGuide"></div>
   </div>
   <div class="card" id="music">
-    <h5>🎵 SONG REQUESTS</h5>
+    <h5>🎵 NOW PLAYING</h5>
     <div class="mrow">
-      <div id="ytWrap"><div id="ytPlayer"></div><div id="ytIdle">🎵<span>Comment !req + song title</span></div></div>
-      <div class="minfo"><div id="mNow">Nothing playing</div><div id="mBy"></div><div id="mNext"></div></div>
+      <div id="mArt">🎵</div>
+      <div class="minfo"><div id="mNow">Comment <b>!req</b> + song title</div><div id="mBy"></div><div id="mBar"><div></div></div></div>
     </div>
+    <div id="mNext"></div>
+    <div id="ytWrap"><div id="ytPlayer"></div></div>
   </div>
   <div id="frame"></div>
   <div id="zones" hidden>
@@ -295,7 +305,7 @@ body.clean #gear{display:none}
   </div>
   <label for="setSongs">Allow !req song requests <input id="setSongs" type="checkbox"></label>
   <label for="setVol">Music volume <input id="setVol" type="range" min="0" max="100" step="5"></label>
-  <div class="note">Songs come from YouTube. Copyrighted music can get your LIVE muted or flagged by TikTok.</div>
+  <div class="note">Songs come from YouTube, audio only. Copyrighted music can get your LIVE muted or flagged by TikTok.</div>
   <h3>SUPPORT ATTACKS (not shown on screen)</h3>
   <div class="btns">
     <button data-gift="1">1 🪙</button>
@@ -1145,13 +1155,25 @@ function playNext(){
 function renderMusic(){
   $('#music').hidden = !settings.songReq;
   const c = music.current, v = c && c.cands[c.idx];
-  $('#ytIdle').hidden = !!c;
-  $('#mNow').textContent = v ? v.title : 'Nothing playing';
+  $('#mArt').innerHTML = v ? `<img src="https://i.ytimg.com/vi/${encodeURIComponent(v.id)}/mqdefault.jpg" alt="" onerror="this.outerHTML='🎵'"><div id="mEq"><i></i><i></i><i></i><i></i></div>` : '🎵';
+  $('#mNow').innerHTML = v ? esc(v.title) : 'Comment <b>!req</b> + song title';
   $('#mBy').textContent = c ? `requested by ${short(c.nickname)}` : '';
+  if (!c) $('#mBar div').style.width = '0';
   $('#mNext').innerHTML = music.queue.length
-    ? '<h6>UP NEXT</h6>' + music.queue.slice(0, 3).map(x => `<div>${esc(x.cands[0].title)}</div>`).join('') + (music.queue.length > 3 ? `<div>+${music.queue.length - 3} more</div>` : '')
+    ? '<h6>UP NEXT</h6>' + music.queue.slice(0, 2).map(x => `<div>${esc(x.cands[0].title)}</div>`).join('') + (music.queue.length > 2 ? `<div>+${music.queue.length - 2} more</div>` : '')
     : '';
+  $('#mNext').hidden = !music.queue.length;
 }
+// progress bar and paused state
+setInterval(() => {
+  const p = music.player;
+  if (!p || !music.current || !p.getDuration) return;
+  try{
+    const d = p.getDuration(), t = p.getCurrentTime();
+    if (d > 0) $('#mBar div').style.width = Math.min(100, t / d * 100) + '%';
+    $('#music').classList.toggle('paused', p.getPlayerState() !== 1);
+  }catch(e){}
+}, 500);
 
 /* ================= AFK mode ================= */
 let lastActive = Date.now(), afkIdx = 0, afkOn = false;
