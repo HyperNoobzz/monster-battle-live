@@ -357,7 +357,7 @@ const store = {
 };
 
 /* ================= settings ================= */
-const settings = Object.assign({ baseHp: 1000, dmgPerCoin: 8, likesPerAttack: 100, powerGoal: 30, cmdCooldown: 3, showGiftGuide: true, nameR: 'RONALDO', nameB: 'MESSI', songReq: true, songVolume: 60, sound: true }, store.get('settings', {}));
+const settings = Object.assign({ baseHp: 1000, dmgPerCoin: 8, likesPerAttack: 100, powerGoal: 30, cmdCooldown: 2, showGiftGuide: true, nameR: 'RONALDO', nameB: 'MESSI', songReq: true, songVolume: 60, sound: true }, store.get('settings', {}));
 function saveSettings(){ store.set('settings', settings); }
 
 /* ================= scaling ================= */
@@ -679,7 +679,7 @@ function teamOf(user, nickname){
 /* ================= event queue ================= */
 const queue = [];
 let busy = false, busySince = 0;
-function speed(){ return Math.min(5, 1 + queue.length / 4); }
+function speed(){ return Math.min(6, 1 + queue.length / 2); }
 const wait = ms => new Promise(r => setTimeout(r, ms / speed()));
 function enqueue(item){ queue.push(item); markActive(); pump(); }
 async function pump(){
@@ -716,7 +716,7 @@ function addFx(cls, x, y, style, html){
 }
 async function projectile(from, to, colors, tier){
   const n = tier === 0 ? 1 : tier === 1 ? 3 : tier === 2 ? 6 : 10;
-  const size = 20 + tier * 10, dur = 380 / speed();
+  const size = 20 + tier * 10, dur = 280 / speed();
   for (let i = 0; i < n; i++){
     const o = addFx('orb', from.x, from.y, {
       width:size + 'px', height:size + 'px',
@@ -818,7 +818,7 @@ async function doAttack(a){
     const pop = addFx('giftpop', from0.x + (a.team === 'R' ? 0 : -118), from0.y + (a.team === 'R' ? -112 : 12), null, giftIcon(a.giftName, a.coins)); setTimeout(() => pop.remove(), 1400);
     say(`${who} · ${gname} <span class="gold">(${fmt(total)} 🪙)</span><br>${teamSpan(a.team, am.name)} used <b>${move.toUpperCase()}</b>!`);
   } else say(`${who}: ${teamSpan(a.team, am.name)} used <b>${move.toUpperCase()}</b>!${xs}`);
-  await wait(450);
+  await wait(220);
 
   const from = center(att.el.mon), to = center(def.el.mon);
   retrigger(att.el.mon, a.team === 'R' ? 'lungeR' : 'lungeB');
@@ -849,10 +849,10 @@ async function doAttack(a){
     toast(`⭐ Thanks ${short(a.nickname)}! ${fmt(a.coins * a.repeat)} 🪙`, a.team === 'R' ? 'r' : 'b');
   }
 
-  await wait(350);
-  if (crit && mult > 1) { say(`<span class="gold">A critical hit!</span> It's super effective!`); await wait(700); }
-  else if (crit) { say(`<span class="gold">A critical hit!</span>`); await wait(600); }
-  else if (mult > 1) { say(`It's super effective!`); await wait(600); }
+  await wait(160);
+  if (crit && mult > 1) { say(`<span class="gold">A critical hit!</span> It's super effective!`); await wait(380); }
+  else if (crit) { say(`<span class="gold">A critical hit!</span>`); await wait(320); }
+  else if (mult > 1) { say(`It's super effective!`); await wait(320); }
 
   if (dm.hp <= 0) await knockout(att, def);
 }
@@ -868,7 +868,7 @@ async function doHeal(h){
   popup(p, '+' + fmt(m.hp - before) + ' HP', 'heal');
   sfx.heal();
   renderHp(team);
-  await wait(900);
+  await wait(450);
 }
 
 async function knockout(winner, loser){
@@ -969,6 +969,7 @@ function chatCommand(user, nickname, cmd){
   lastCmd.set(user, now);
   const k = teamOf(user, nickname), t = teams[k];
   pending[k][cmd].push({ user, nickname });
+  scheduleFlush();
   t.power++;
   if (t.power >= settings.powerGoal){
     t.power -= settings.powerGoal;
@@ -995,11 +996,20 @@ function flushCommands(){
       p.h = [];
     }
     renderHp(t);
-    if (p.a.length){ enqueue({ kind:'attack', source:'comment', team:k, hits:p.a.length, users:p.a }); p.a = []; }
+    if (p.a.length){
+      // If this team's comment attack is still waiting in line, add to it instead of queueing another.
+      const waiting = queue.find(x => x.kind === 'attack' && x.source === 'comment' && x.team === k);
+      if (waiting){ waiting.hits += p.a.length; waiting.users.push(...p.a); }
+      else enqueue({ kind:'attack', source:'comment', team:k, hits:p.a.length, users:p.a });
+      p.a = [];
+    }
     while (p.powerReady > 0){ p.powerReady--; enqueue({ kind:'attack', source:'power', team:k }); }
   }
 }
-setInterval(flushCommands, 1200);
+// Comments are handled 120ms after the first one arrives: fast for a single viewer,
+// while a burst of comments still lands as one team volley.
+let flushTimer = null;
+function scheduleFlush(){ if (!flushTimer) flushTimer = setTimeout(() => { flushTimer = null; flushCommands(); }, 120); }
 
 window.monsterBattle = { handleEvent }; // for an Electron/desktop wrapper or devtools
 
