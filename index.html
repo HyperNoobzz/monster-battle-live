@@ -681,6 +681,7 @@ const queue = [];
 let busy = false, busySince = 0;
 function speed(){ return Math.min(6, 1 + queue.length / 2); }
 const wait = ms => new Promise(r => setTimeout(r, ms / speed()));
+let koPending = false; // a knockout is underway: comment hits pause until the next round starts
 function enqueue(item){ queue.push(item); markActive(); pump(); }
 async function pump(){
   if (busy) return;
@@ -693,6 +694,7 @@ async function pump(){
       try{
         if (item.kind === 'attack') await doAttack(item);
         else if (item.kind === 'heal') await doHeal(item);
+        else if (item.kind === 'ko'){ const w = teams[item.winner], l = teams[other(item.winner)]; if (l.mon.hp <= 0) await knockout(w, l); else koPending = false; }
       }catch(e){ console.error(e); }
     }
   } finally { busy = false; updateSpeedTag(); }
@@ -716,7 +718,7 @@ function addFx(cls, x, y, style, html){
 }
 async function projectile(from, to, colors, tier){
   const n = tier === 0 ? 1 : tier === 1 ? 3 : tier === 2 ? 6 : 10;
-  const size = 20 + tier * 10, dur = 280 / speed();
+  const size = 20 + tier * 10, dur = 230 / speed();
   for (let i = 0; i < n; i++){
     const o = addFx('orb', from.x, from.y, {
       width:size + 'px', height:size + 'px',
@@ -798,6 +800,9 @@ async function doAttack(a){
              : a.source === 'power' ? dm.maxHp * .08 : a.power;
   let dmg = Math.max(1, Math.round(base * mult * (crit ? 2 : 1) * (0.9 + Math.random() * .2)));
   const absorbed = Math.min(def.shield, dmg);
+  if (dm.hp <= 0){ // knocked out by a comment volley: replay this attack right after the knockout
+    const i = queue.findIndex(x => x.kind === 'ko'); if (i >= 0) queue.splice(i + 1, 0, a); return;
+  }
 
   let who;
   if (a.source === 'like') who = `${teamSpan(a.team, att.label)} fans' likes`;
@@ -818,7 +823,6 @@ async function doAttack(a){
     const pop = addFx('giftpop', from0.x + (a.team === 'R' ? 0 : -118), from0.y + (a.team === 'R' ? -112 : 12), null, giftIcon(a.giftName, a.coins)); setTimeout(() => pop.remove(), 1400);
     say(`${who} · ${gname} <span class="gold">(${fmt(total)} 🪙)</span><br>${teamSpan(a.team, am.name)} used <b>${move.toUpperCase()}</b>!`);
   } else say(`${who}: ${teamSpan(a.team, am.name)} used <b>${move.toUpperCase()}</b>!${xs}`);
-  await wait(220);
 
   const from = center(att.el.mon), to = center(def.el.mon);
   retrigger(att.el.mon, a.team === 'R' ? 'lungeR' : 'lungeB');
@@ -872,6 +876,7 @@ async function doHeal(h){
 }
 
 async function knockout(winner, loser){
+  koPending = true;
   say(`${teamSpan(loser.key, loser.mon.name)} is knocked out!`);
   sfx.faint();
   loser.el.mon.classList.add('faint');
@@ -890,6 +895,7 @@ async function knockout(winner, loser){
   await new Promise(r => setTimeout(r, Math.max(1600, 3200 / Math.sqrt(speed()))));
   $('#banner').classList.remove('show');
   nextRound();
+  koPending = false;
   say(`Round ${round}! ${teamSpan('R', teams.R.mon.name)} and ${teamSpan('B', teams.B.mon.name)} come back stronger!`);
   await wait(1200);
 }
@@ -985,6 +991,7 @@ function flushCommands(){
       const before = t.shield;
       t.shield = Math.min(m.maxHp * .3, t.shield + p.d.length * m.maxHp * .015);
       if (t.shield > before){ popup(pos, '🛡 +' + fmt(t.shield - before), 'shield'); sfx.join(); }
+      renderHp(t);
       toast(`🛡 ${short(p.d[0].nickname)}${p.d.length > 1 ? ' +' + (p.d.length - 1) : ''} defended ${t.label}`, k === 'R' ? 'r' : 'b');
       p.d = [];
     }
@@ -994,22 +1001,51 @@ function flushCommands(){
       if (m.hp > before){ burstAt(pos, '#59ff8c'); popup(pos, '+' + fmt(m.hp - before) + ' HP', 'heal'); sfx.heal(); }
       toast(`💚 ${short(p.h[0].nickname)}${p.h.length > 1 ? ' +' + (p.h.length - 1) : ''} healed ${t.label}`, k === 'R' ? 'r' : 'b');
       p.h = [];
+      renderHp(t);
     }
-    renderHp(t);
-    if (p.a.length){
-      // If this team's comment attack is still waiting in line, add to it instead of queueing another.
-      const waiting = queue.find(x => x.kind === 'attack' && x.source === 'comment' && x.team === k);
-      if (waiting){ waiting.hits += p.a.length; waiting.users.push(...p.a); }
-      else enqueue({ kind:'attack', source:'comment', team:k, hits:p.a.length, users:p.a });
-      p.a = [];
-    }
+    if (p.a.length){ quickVolley(k, p.a); p.a = []; }
     while (p.powerReady > 0){ p.powerReady--; enqueue({ kind:'attack', source:'power', team:k }); }
   }
 }
-// Comments are handled 120ms after the first one arrives: fast for a single viewer,
-// while a burst of comments still lands as one team volley.
+// Comments are handled 40ms after the first one arrives (comments that TikTok delivers
+// together become one team volley).
 let flushTimer = null;
-function scheduleFlush(){ if (!flushTimer) flushTimer = setTimeout(() => { flushTimer = null; flushCommands(); }, 120); }
+function scheduleFlush(){ if (!flushTimer) flushTimer = setTimeout(() => { flushTimer = null; flushCommands(); }, 40); }
+
+// Comment attacks don't wait behind gift animations: the damage lands as soon as the
+// ball arrives (~0.2s), even while other attacks are still animating.
+function quickVolley(k, users){
+  if (koPending) return;
+  const att = teams[k], def = teams[other(k)], am = att.mon, dm = def.mon;
+  if (dm.hp <= 0) return;
+  const hits = users.length, T = TYPES[am.type];
+  const crit = Math.random() < .1;
+  const dmg = Math.max(1, Math.round(hits * dm.maxHp * .012 * (crit ? 2 : 1) * (0.9 + Math.random() * .2)));
+  const absorbed = Math.min(def.shield, dmg);
+  def.shield -= absorbed;
+  dm.hp = Math.max(0, dm.hp - (dmg - absorbed));
+  for (const u of users){
+    const rec = att.dmg.get(u.user) || { nickname:u.nickname, dmg:0 };
+    rec.dmg += dmg / hits; rec.nickname = u.nickname; att.dmg.set(u.user, rec);
+  }
+  if (!busy){
+    const names = [...new Set(users.map(u => short(u.nickname)))];
+    say(`${esc(names.slice(0, 2).join(', '))}${names.length > 2 ? ` +${names.length - 2}` : ''}: ${teamSpan(k, am.name)} used <b>${T.moves[0].toUpperCase()}</b>!${hits > 1 ? ` <span class="gold">×${hits}</span>` : ''}`);
+  }
+  const from = center(att.el.mon), to = center(def.el.mon);
+  retrigger(att.el.mon, k === 'R' ? 'lungeR' : 'lungeB');
+  projectile(from, to, T.fx, hits >= 10 ? 1 : 0);
+  setTimeout(() => {
+    retrigger(def.el.mon, 'hit');
+    burstAt(to, T.fx[1]);
+    if (absorbed >= dmg) popup(to, '🛡 BLOCKED', 'shield');
+    else popup(to, (crit ? 'CRIT ' : '') + '-' + fmt(dmg - absorbed), crit ? 'crit' : '');
+    sfx.hit(0); if (crit) sfx.crit();
+    renderHp(def); renderBoards();
+  }, 200);
+  markActive();
+  if (dm.hp <= 0 && !koPending){ koPending = true; queue.unshift({ kind:'ko', winner:k }); setTimeout(pump, 250); }
+}
 
 window.monsterBattle = { handleEvent }; // for an Electron/desktop wrapper or devtools
 
